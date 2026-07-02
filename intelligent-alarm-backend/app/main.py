@@ -2,6 +2,13 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.database import engine
+from app.models.base import Base
+# Import all models so SQLAlchemy knows they exist before creating tables
+from app.models import user, alarm, habit
+
+# Create all tables in the PostgreSQL database
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Intelligent Cognitive Alarm API",
