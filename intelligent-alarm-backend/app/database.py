@@ -11,7 +11,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://alarm_user:alarm_password@localhost:5432/alarm_db"
+    "postgresql://alarm_user:alarm_password@127.0.0.1:5433/alarm_db"
 )
 
 engine = create_engine(DATABASE_URL, echo=True)
