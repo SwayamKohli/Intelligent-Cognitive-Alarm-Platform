@@ -39,5 +39,20 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  mongo:
+    image: mongo:7
+    container_name: cognitive_alarm_mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo_user
+      MONGO_INITDB_ROOT_PASSWORD: mongo_password
+      MONGO_INITDB_DATABASE: cognitive_alarm_logs
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+
 volumes:
   postgres_data:
+  mongo_data:

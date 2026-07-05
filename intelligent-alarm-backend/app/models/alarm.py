@@ -1,13 +1,14 @@
 import uuid
 import enum
-from datetime import datetime, time
+from datetime import datetime, time,date
 
-from sqlalchemy import String, Boolean, Enum, Time, DateTime, ForeignKey
+from sqlalchemy import String, Boolean, Enum, Time, DateTime, ForeignKey, Date, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.models.base import Base
+
 
 
 class AlarmType(str, enum.Enum):
@@ -36,6 +37,8 @@ class Alarm(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     snooze_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     snooze_limit: Mapped[int] = mapped_column(default=3, nullable=False)
+    active_snooze_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_snooze_reset_date: Mapped[date] = mapped_column(Date, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
