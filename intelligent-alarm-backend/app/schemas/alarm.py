@@ -1,19 +1,27 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict
+from datetime import time, datetime
 from typing import Optional
-from datetime import time as datetime_time
+from uuid import UUID
+from app.models.alarm import AlarmType
 
 class AlarmBase(BaseModel):
-    time: datetime_time = Field(..., description="Time of the alarm")
-    label: Optional[str] = Field(default="Wake Up", max_length=50)
+    label: str
+    time: time
+    alarm_type: AlarmType
     is_active: bool = True
-    difficulty_preference: str = Field(default="Medium")
+    recurrence_days: Optional[str] = None
+    snooze_enabled: bool = True
+    snooze_limit: int = 3
 
 class AlarmCreate(AlarmBase):
+    """Payload expected from the frontend when creating an alarm."""
     pass
 
 class AlarmResponse(AlarmBase):
-    id: int
-    user_id: int
+    """Payload returned to the frontend."""
+    id: UUID
+    user_id: UUID
+    active_snooze_count: int
+    created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

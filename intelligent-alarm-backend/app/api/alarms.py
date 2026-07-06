@@ -13,24 +13,32 @@ from app.services.alarm_service import register_snooze
 
 router = APIRouter(prefix="/alarms", tags=["Alarms"])
 
-# Dummy data for testing before DB connection is finalized
-mock_db_alarms = [
-    {"id": 1, "user_id": 1, "time": time(7, 0), "label": "Morning Class", "is_active": True, "difficulty_preference": "Medium"}
-]
-
+# ── POST /alarms/ ───────────────────────────────────────────────────
 @router.post("/", response_model=AlarmResponse, status_code=status.HTTP_201_CREATED)
-def create_alarm(alarm: AlarmCreate):
-    """Schedule a new alarm."""
-    new_alarm = alarm.model_dump()
-    new_alarm["id"] = len(mock_db_alarms) + 1
-    new_alarm["user_id"] = 1 # Hardcoded until Auth is fully linked
-    mock_db_alarms.append(new_alarm)
-    return new_alarm
+def create_alarm(
+    alarm: AlarmCreate,
+    current_user: User = Depends(get_current_user), # Lock down the route
+    db: Session = Depends(get_db)                   # Connect to Postgres
+):
+    """Schedule a new alarm securely linked to the authenticated user."""
+    # Convert Pydantic schema to dict and inject the secure user ID
+    db_alarm = Alarm(**alarm.model_dump(), user_id=current_user.id)
+    
+    db.add(db_alarm)
+    db.commit()
+    db.refresh(db_alarm)
+    
+    return db_alarm
 
+
+# ── GET /alarms/ ────────────────────────────────────────────────────
 @router.get("/", response_model=List[AlarmResponse])
-def get_user_alarms():
-    """Retrieve all alarms for the logged-in user."""
-    return mock_db_alarms
+def get_user_alarms(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retrieve all alarms belonging only to the logged-in user."""
+    return db.query(Alarm).filter(Alarm.user_id == current_user.id).all()
 
 
 # ── POST /alarms/snooze ─────────────────────────────────────────────
