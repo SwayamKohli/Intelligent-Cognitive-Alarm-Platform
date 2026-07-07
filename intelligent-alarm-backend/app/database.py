@@ -12,7 +12,7 @@ load_dotenv()
 
 MONGO_URL = os.getenv(
     "MONGO_URL",
-    "mongodb://mongo_user:mongo_password@localhost:27017"
+    "mongodb://mongo_user:mongo_password@localhost:27018"
 )
 
 client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=2000)

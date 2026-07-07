@@ -48,7 +48,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mongo_password
       MONGO_INITDB_DATABASE: cognitive_alarm_logs
     ports:
-      - "27018:27017"
+      - "27018:27018"
     volumes:
       - mongo_data:/data/db
 
