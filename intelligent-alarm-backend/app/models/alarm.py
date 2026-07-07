@@ -38,6 +38,7 @@ class Alarm(Base):
     snooze_limit: Mapped[int] = mapped_column(default=3, nullable=False)
     active_snooze_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     last_snooze_reset_date: Mapped[date] = mapped_column(Date, nullable=True)
+    multi_step_requirement: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
