@@ -9,9 +9,10 @@ function Dashboard() {
 
   const [showCreateAlarm, setShowCreateAlarm] = useState(false);
   const [alarms, setAlarms] = useState([]);
-
-  // Temporary until Challenge API integration
-  const isAlarmRinging = false;
+  
+  // Real active ringing alarm state
+  const [activeRingingAlarm, setActiveRingingAlarm] = useState(null);
+  const [lastTriggeredMinute, setLastTriggeredMinute] = useState("");
 
   // Fetch alarms from backend
   const fetchAlarms = async () => {
@@ -32,6 +33,10 @@ function Dashboard() {
         setAlarms(data);
       } else {
         console.log("Failed to fetch alarms.");
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+        }
       }
     } catch (error) {
       console.log(error);
@@ -50,15 +55,65 @@ function Dashboard() {
     fetchAlarms();
   }, [navigate]);
 
+  // Clock loop to trigger alarms based on local time
+  useEffect(() => {
+    const checkAlarms = () => {
+      if (alarms.length === 0 || activeRingingAlarm) return;
+
+      const now = new Date();
+      const currentHour = String(now.getHours()).padStart(2, "0");
+      const currentMin = String(now.getMinutes()).padStart(2, "0");
+      const currentTimeStr = `${currentHour}:${currentMin}`; // e.g. "08:15"
+
+      // Only check once per minute
+      if (currentTimeStr === lastTriggeredMinute) return;
+
+      const ringing = alarms.find((alarm) => {
+        if (!alarm.is_active) return false;
+        
+        // alarm.time is usually "HH:MM:SS" or "HH:MM"
+        return alarm.time.startsWith(currentTimeStr);
+      });
+
+      if (ringing) {
+        setActiveRingingAlarm(ringing);
+        setLastTriggeredMinute(currentTimeStr);
+      }
+    };
+
+    // Check immediately and then every 5 seconds
+    checkAlarms();
+    const interval = setInterval(checkAlarms, 5000);
+
+    return () => clearInterval(interval);
+  }, [alarms, activeRingingAlarm, lastTriggeredMinute]);
+
   // Called after successful alarm creation
   const handleAlarmCreated = () => {
     setShowCreateAlarm(false);
     fetchAlarms();
   };
 
+  const handleDismissAlarm = () => {
+    setActiveRingingAlarm(null);
+    fetchAlarms(); // refresh alarm state (e.g. reset snooze count)
+  };
+
+  const handleSnoozeAlarm = () => {
+    setActiveRingingAlarm(null);
+    fetchAlarms(); // refresh alarm state
+  };
+
   return (
     <>
-      {isAlarmRinging && <AlarmModal />}
+      {activeRingingAlarm && (
+        <AlarmModal
+          alarmId={activeRingingAlarm.id}
+          alarmLabel={activeRingingAlarm.label}
+          onDismiss={handleDismissAlarm}
+          onSnooze={handleSnoozeAlarm}
+        />
+      )}
 
       <div className="dashboard-container">
         <h1>User Dashboard</h1>
@@ -99,16 +154,28 @@ function Dashboard() {
             {alarms.length === 0 ? (
               <p>No alarms created yet.</p>
             ) : (
-              alarms.map((alarm) => (
-                <div key={alarm.id}>
-                  <strong>{alarm.label}</strong>
-                  <p>{alarm.time}</p>
-                </div>
-              ))
+              <div className="alarms-list">
+                {alarms.map((alarm) => (
+                  <div key={alarm.id} className="alarm-item-row">
+                    <div className="alarm-info">
+                      <strong className="alarm-item-label">{alarm.label}</strong>
+                      <span className="alarm-item-time">{alarm.time}</span>
+                    </div>
+                    <div className="alarm-item-actions">
+                      <button 
+                        className="test-alarm-btn" 
+                        onClick={() => setActiveRingingAlarm(alarm)}
+                      >
+                        ⚡ Test
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
 
             {!showCreateAlarm && (
-              <button onClick={() => setShowCreateAlarm(true)}>
+              <button className="add-alarm-btn" onClick={() => setShowCreateAlarm(true)}>
                 Add Alarm
               </button>
             )}

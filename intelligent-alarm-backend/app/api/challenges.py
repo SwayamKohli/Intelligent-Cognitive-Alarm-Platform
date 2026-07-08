@@ -15,7 +15,7 @@ from app.core.challenge_generator import get_next_challenge
 from app.core.adaptive_ml import predict_next_challenge
 from app.schemas.challenge import ChallengeVerifyRequest
 from app.schemas.challenge_log import ChallengeLog
-from app.services.challenge_log_service import log_challenge_attempt
+from app.services.challenge_log_service import log_challenge_attempt, get_total_attempts
 
 router = APIRouter(prefix="/challenges", tags=["Challenges"])
 
@@ -26,7 +26,7 @@ _pending_answers: dict[str, dict] = {}
 
 # ── GET /challenges/next ─────────────────────────────────────────────
 @router.get("/next")
-def get_next_challenge_endpoint(
+async def get_next_challenge_endpoint(
     alarm_id: UUID = Query(..., description="The alarm that triggered this challenge"),
     challenge_type: str = Query("random", description="Specific engine to trigger, or 'random'"),
     current_user: User = Depends(get_current_user),
@@ -75,8 +75,17 @@ def get_next_challenge_endpoint(
             target_streak
         )
 
-    # 4. Route to the cognitive engines
-    challenge_data = get_next_challenge(difficulty, final_challenge_type)
+    # Fetch total attempts from MongoDB
+    total_attempts = await get_total_attempts(str(current_user.id))
+
+    # 4. Route to the cognitive engines (using both user_id and alarm_id to ensure different alarms get different math/cognitive problems)
+    user_seed_key = f"{current_user.id}_{alarm_id}"
+    challenge_data = get_next_challenge(
+        difficulty=difficulty,
+        challenge_type=final_challenge_type,
+        user_id=user_seed_key,
+        total_attempts=total_attempts
+    )
 
     # Stash the new correct answer and type for the verify endpoint
     _pending_answers[key]["answer"] = challenge_data["server_answer"]

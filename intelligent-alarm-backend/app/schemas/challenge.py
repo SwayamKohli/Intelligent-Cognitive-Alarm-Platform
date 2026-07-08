@@ -11,7 +11,7 @@ class ChallengeNextResponse(BaseModel):
 class ChallengeVerifyRequest(BaseModel):
     """Body for POST /challenges/verify."""
     alarm_id: UUID
-    answer: int
+    answer: str
 
 
 class ChallengeVerifyResponse(BaseModel):
