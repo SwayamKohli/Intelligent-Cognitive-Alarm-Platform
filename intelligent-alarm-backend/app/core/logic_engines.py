@@ -1,9 +1,11 @@
 import random
 import string
+from app.core.static_engines import get_local_random
 
-def generate_memory_sequence(difficulty: int) -> dict:
+def generate_memory_sequence(difficulty: int, user_id: str | None = None, total_attempts: int = 0) -> dict:
     """Generates a timed alphanumeric memory sequence."""
     difficulty = max(1, min(5, difficulty))
+    r = get_local_random(user_id, total_attempts)
     
     difficulty_matrix = {
         1: (3, 4000),
@@ -15,7 +17,7 @@ def generate_memory_sequence(difficulty: int) -> dict:
     
     seq_length, display_time = difficulty_matrix[difficulty]
     pool = string.digits if difficulty <= 2 else string.digits + string.ascii_uppercase
-    sequence = [random.choice(pool) for _ in range(seq_length)]
+    sequence = [r.choice(pool) for _ in range(seq_length)]
     
     return {
         "client_payload": {
@@ -30,35 +32,36 @@ def generate_memory_sequence(difficulty: int) -> dict:
         "server_answer": "".join(sequence)
     }
 
-def generate_pattern_recognition(difficulty: int) -> dict:
+def generate_pattern_recognition(difficulty: int, user_id: str | None = None, total_attempts: int = 0) -> dict:
     """Generates a mathematical or logical sequence with a missing element."""
     difficulty = max(1, min(5, difficulty))
+    r = get_local_random(user_id, total_attempts)
     length = 5
     seq = []
     
     if difficulty == 1:
-        step = random.randint(2, 5)
-        start = random.randint(1, 10)
+        step = r.randint(2, 5)
+        start = r.randint(1, 10)
         seq = [start + i * step for i in range(length)]
     elif difficulty == 2:
-        step = random.randint(2, 3)
-        start = random.randint(2, 5)
+        step = r.randint(2, 3)
+        start = r.randint(2, 5)
         seq = [start * (step ** i) for i in range(length)]
     elif difficulty == 3:
-        start = random.randint(1, 5)
+        start = r.randint(1, 5)
         seq = [start]
         for i in range(1, length):
             seq.append(seq[-1] + i)
     elif difficulty == 4:
-        seq = [random.randint(1, 5), random.randint(1, 5)]
+        seq = [r.randint(1, 5), r.randint(1, 5)]
         for _ in range(length - 2):
             seq.append(seq[-1] + seq[-2])
     else: 
-        offset = random.randint(1, 3)
-        start = random.randint(2, 5)
+        offset = r.randint(1, 3)
+        start = r.randint(2, 5)
         seq = [(start + i)**2 + offset for i in range(length)]
         
-    missing_idx = random.randint(1, length - 2) 
+    missing_idx = r.randint(1, length - 2) 
     answer = str(seq[missing_idx])
     seq[missing_idx] = "?"
     

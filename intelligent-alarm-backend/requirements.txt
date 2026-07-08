@@ -12,3 +12,4 @@ motor
 pandas 
 numpy 
 scikit-learn
+alembic
