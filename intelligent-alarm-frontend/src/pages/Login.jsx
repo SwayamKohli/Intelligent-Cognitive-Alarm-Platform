@@ -33,16 +33,22 @@ function Login() {
       if (response.ok) {
         const data = await response.json();
 
+        console.log("Login Response:", data);
+
         localStorage.setItem("token", data.access_token);
+
+        console.log("Saved Token:", localStorage.getItem("token"));
 
         alert("Login Successful!");
 
         navigate("/dashboard");
       } else {
+        const error = await response.text();
+        console.log("Login Error:", error);
         alert("Invalid Email or Password");
       }
     } catch (error) {
-      console.log(error);
+      console.log("Network Error:", error);
       alert("Backend not running. Team lead will test the integration.");
     }
   };

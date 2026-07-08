@@ -38,6 +38,10 @@ function CreateAlarmForm({ onAlarmCreated }) {
       });
 
       if (response.ok) {
+        const data = await response.json();
+
+        console.log("Alarm Created:", data);
+
         alert("Alarm created successfully!");
 
         setLabel("");
@@ -52,11 +56,18 @@ function CreateAlarmForm({ onAlarmCreated }) {
           onAlarmCreated();
         }
       } else {
-        alert("Failed to create alarm.");
+        const errorData = await response.json();
+
+        console.log(
+          "Create Alarm Error:",
+          JSON.stringify(errorData, null, 2)
+        );
+
+        alert(JSON.stringify(errorData, null, 2));
       }
     } catch (error) {
       console.error(error);
-      alert("Backend not running. Team lead can test the integration.");
+      alert("Backend not running.");
     }
   };
 

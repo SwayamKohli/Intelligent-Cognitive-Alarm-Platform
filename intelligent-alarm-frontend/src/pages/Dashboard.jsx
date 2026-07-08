@@ -11,10 +11,10 @@ function Dashboard() {
   const [alarms, setAlarms] = useState([]);
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // Temporary until Challenge API integration
-  const isAlarmRinging = false;
-
-  // Fetch alarms from backend
+  const [isAlarmRinging, setIsAlarmRinging] = useState(false);
+  const [currentChallenge, setCurrentChallenge] = useState(null);
+  const [currentAlarmId, setCurrentAlarmId] = useState(null);
+  // Fetch alarms
   const fetchAlarms = async () => {
     const token = localStorage.getItem("token");
 
@@ -39,6 +39,37 @@ function Dashboard() {
     }
   };
 
+  // Delete Alarm
+  const handleDeleteAlarm = async (alarmId) => {
+    const token = localStorage.getItem("token");
+
+    if (!window.confirm("Are you sure you want to delete this alarm?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/alarms/${alarmId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        alert("Alarm deleted successfully.");
+        fetchAlarms();
+      } else {
+        alert("Failed to delete alarm.");
+      }
+    } catch (error) {
+      console.log(error);
+      alert("Backend not running.");
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -54,13 +85,53 @@ function Dashboard() {
     setShowCreateAlarm(false);
     fetchAlarms();
   };
+  const fetchChallenge = async (alarmId) => {
+    console.log("Alarm ID:", alarmId);
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/challenges/next?alarm_id=${alarmId}&challenge_type=random`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      alert("Failed to fetch challenge.");
+      return;
+    }
+
+    const data = await response.json();
+    console.log(JSON.stringify(data.streak_state, null, 2));
+
+    setCurrentChallenge(data);
+    setCurrentAlarmId(alarmId);
+    setIsAlarmRinging(true);
+
+  } catch (error) {
+    console.log(error);
+    alert("Backend error.");
+  }
+};
 
   return (
     <>
-      {isAlarmRinging && <AlarmModal />}
-
+      {isAlarmRinging && (
+  <AlarmModal
+    challenge={currentChallenge}
+    alarmId={currentAlarmId}
+    onClose={() => {
+      setIsAlarmRinging(false);
+      setCurrentChallenge(null);
+      setCurrentAlarmId(null);
+    }}
+  />
+)}
       <div className="dashboard-layout">
-        {/* Sidebar */}
         <aside className="sidebar">
           <h2>Alarm App</h2>
 
@@ -86,7 +157,6 @@ function Dashboard() {
           </button>
         </aside>
 
-        {/* Main Content */}
         <main className="main-content">
           <h1>User Dashboard</h1>
 
@@ -134,6 +204,18 @@ function Dashboard() {
                       <strong>{alarm.label}</strong>
                       <p>{alarm.time}</p>
                     </div>
+
+                    <button
+                      onClick={() => handleDeleteAlarm(alarm.id)}
+                      className="delete-btn"
+                    >
+                      Delete
+                    </button>
+                    <button
+  onClick={() => fetchChallenge(alarm.id)}
+>
+  Test Ring
+</button>
                   </div>
                 ))
               )}
