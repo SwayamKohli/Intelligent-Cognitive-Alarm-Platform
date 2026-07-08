@@ -10,6 +10,7 @@ from app.api.auth import get_current_user
 from app.schemas.alarm import AlarmCreate, AlarmResponse
 from app.schemas.challenge import SnoozeRequest, SnoozeResponse
 from app.services.alarm_service import register_snooze
+from uuid import UUID
 
 router = APIRouter(prefix="/alarms", tags=["Alarms"])
 
@@ -85,3 +86,30 @@ def snooze_alarm(
         active_snooze_count=updated_alarm.active_snooze_count,
         snooze_limit=updated_alarm.snooze_limit,
     )
+
+# ── DELETE /alarms/{alarm_id} ────────────────────────────────────────
+@router.delete("/{alarm_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_alarm(
+    alarm_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Deletes a specific alarm. Ensures the alarm belongs to the requesting user.
+    """
+    alarm = db.query(Alarm).filter(
+        Alarm.id == alarm_id,
+        Alarm.user_id == current_user.id
+    ).first()
+
+    if not alarm:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Alarm not found or you do not have permission to delete it."
+        )
+
+    db.delete(alarm)
+    db.commit()
+    
+    # 204 No Content responses should not return a body
+    return None
