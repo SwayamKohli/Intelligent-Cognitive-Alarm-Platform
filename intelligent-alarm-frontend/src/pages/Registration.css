@@ -1,59 +1,14 @@
-.register-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background-color: #f5f7fa;
-}
-
-.register-container h1 {
-  margin-bottom: 30px;
-  color: #2c3e50;
-  font-size: 28px;
-}
-
-.register-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  width: 350px;
-  background-color: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.register-form input {
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-.register-form button {
-  padding: 10px;
-  font-size: 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.register-form button:hover {
-  background-color: #0056b3;
-}
 .login-text {
-  margin-top: 15px;
+  margin-top: 4px;
   text-align: center;
   font-size: 14px;
+  color: var(--text-dim);
 }
 
 .login-text a {
-  color: #007bff;
+  color: var(--accent);
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .login-text a:hover {

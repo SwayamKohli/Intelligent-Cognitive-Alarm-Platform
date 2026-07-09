@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import api from "../lib/api";
+import AuthWaveBackground from "../components/AuthWaveBackground";
+import "../components/AuthWaveBackground.css";
 import "./Registration.css";
 
 function Registration() {
@@ -9,91 +13,140 @@ function Registration() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleRegister = async () => {
-    if (
-      fullName === "" ||
-      email === "" ||
-      password === "" ||
-      confirmPassword === ""
-    ) {
-      alert("Please fill all the fields");
+    setErrorMsg("");
+
+    if (!fullName || !email || !password || !confirmPassword) {
+      setErrorMsg("Please fill all the fields");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      setErrorMsg("Passwords do not match");
       return;
     }
 
+    setLoading(true);
     try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/users/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            full_name: fullName,
-            email: email,
-            password: password,
-          }),
-        }
-      );
+      await api.post("/users/register", {
+        full_name: fullName,
+        email,
+        password,
+      });
 
-      if (response.ok) {
-        alert("Registration Successful!");
-        navigate("/login");
-      } else {
-        const error = await response.json();
-        alert(error.detail || "Registration Failed");
-      }
+      navigate("/login");
     } catch (error) {
       console.log(error);
-      alert("Backend not running. Team lead will test the integration.");
+      setErrorMsg(error.response?.data?.detail || "Registration failed");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleRegister();
+  };
+
   return (
-    <div className="register-container">
-      <h1>Registration</h1>
+    <div className="auth-container">
+      <AuthWaveBackground />
 
-      <div className="register-form">
-        <input
-          type="text"
-          placeholder="Enter your full name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-        />
+      <motion.div
+        className="auth-content"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <motion.div
+          className="brand-mark"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          ⏰
+        </motion.div>
 
-        <input
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <h1 className="auth-title">Create your account</h1>
+        <p className="auth-subtitle">Start building better wake-up habits</p>
 
-        <input
-          type="password"
-          placeholder="Enter your password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <motion.div
+          className="glass-card auth-form"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+        >
+          <div className="input-group">
+            <label>Full name</label>
+            <input
+              type="text"
+              placeholder="John Doe"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
 
-        <input
-          type="password"
-          placeholder="Confirm your password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-        />
+          <div className="input-group">
+            <label>Email</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
 
-        <button onClick={handleRegister}>Register</button>
+          <div className="input-group">
+            <label>Password</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
 
-        <p className="login-text">
-          Already have an account? <Link to="/login">Login</Link>
-        </p>
-      </div>
+          <div className="input-group">
+            <label>Confirm password</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+
+          {errorMsg && (
+            <motion.p
+              className="auth-error"
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              {errorMsg}
+            </motion.p>
+          )}
+
+          <motion.button
+            className="btn-accent auth-submit"
+            onClick={handleRegister}
+            disabled={loading}
+            whileTap={{ scale: 0.97 }}
+            whileHover={{ y: -1 }}
+          >
+            {loading ? "Creating account…" : "Register"}
+          </motion.button>
+
+          <p className="login-text">
+            Already have an account? <Link to="/login">Login</Link>
+          </p>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

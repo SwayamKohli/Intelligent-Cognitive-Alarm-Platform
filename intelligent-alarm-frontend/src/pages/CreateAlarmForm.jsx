@@ -1,4 +1,19 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
+import api from "../lib/api";
+import { staggerContainer, staggerItem } from "../lib/motion";
+
+const AVAILABLE_CHALLENGES = [
+  "math", "memory", "pattern", "logic", "word_scramble", "riddle", "quiz",
+];
+
+const ALARM_TYPES = [
+  { value: "daily", label: "Daily" },
+  { value: "weekday", label: "Weekday" },
+  { value: "weekend", label: "Weekend" },
+  { value: "one_time", label: "One Time" },
+  { value: "smart_adaptive", label: "Smart Adaptive" },
+];
 
 function CreateAlarmForm({ onAlarmCreated }) {
   const [label, setLabel] = useState("");
@@ -8,13 +23,9 @@ function CreateAlarmForm({ onAlarmCreated }) {
   const [recurrenceDays, setRecurrenceDays] = useState("");
   const [snoozeEnabled, setSnoozeEnabled] = useState(true);
   const [snoozeLimit, setSnoozeLimit] = useState(3);
-  
-  // NEW: Track selected challenges
   const [preferredChallenges, setPreferredChallenges] = useState([]);
-
-  const availableChallenges = [
-    "math", "memory", "pattern", "logic", "word_scramble", "riddle", "quiz"
-  ];
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleChallengeToggle = (challenge) => {
     setPreferredChallenges((prev) =>
@@ -26,134 +37,136 @@ function CreateAlarmForm({ onAlarmCreated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg("");
 
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      alert("Please login first.");
+    if (!label || !time) {
+      setErrorMsg("Please provide a label and time.");
       return;
     }
 
+    setSubmitting(true);
     try {
-      const response = await fetch("http://127.0.0.1:8000/alarms/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          label,
-          time,
-          alarm_type: alarmType,
-          is_active: isActive,
-          recurrence_days: recurrenceDays || null,
-          snooze_enabled: snoozeEnabled,
-          snooze_limit: snoozeLimit,
-          // NEW: Flatten the array to a comma-separated string, or send null if empty
-          preferred_challenges: preferredChallenges.length > 0 ? preferredChallenges.join(",") : null,
-        }),
+      await api.post("/alarms/", {
+        label,
+        time,
+        alarm_type: alarmType,
+        is_active: isActive,
+        recurrence_days: recurrenceDays || null,
+        snooze_enabled: snoozeEnabled,
+        snooze_limit: snoozeLimit,
+        preferred_challenges:
+          preferredChallenges.length > 0 ? preferredChallenges.join(",") : null,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Alarm Created:", data);
-        alert("Alarm created successfully!");
+      setLabel("");
+      setTime("");
+      setAlarmType("daily");
+      setIsActive(true);
+      setRecurrenceDays("");
+      setSnoozeEnabled(true);
+      setSnoozeLimit(3);
+      setPreferredChallenges([]);
 
-        // Reset form
-        setLabel("");
-        setTime("");
-        setAlarmType("daily");
-        setIsActive(true);
-        setRecurrenceDays("");
-        setSnoozeEnabled(true);
-        setSnoozeLimit(3);
-        setPreferredChallenges([]);
-
-        if (onAlarmCreated) {
-          onAlarmCreated();
-        }
-      } else {
-        const errorData = await response.json();
-        console.log("Create Alarm Error:", JSON.stringify(errorData, null, 2));
-        alert(JSON.stringify(errorData, null, 2));
-      }
+      onAlarmCreated?.();
     } catch (error) {
       console.error(error);
-      alert("Backend not running.");
+      const detail = error.response?.data?.detail;
+      setErrorMsg(
+        typeof detail === "string" ? detail : "Failed to create alarm."
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <motion.form
+      onSubmit={handleSubmit}
+      className="create-alarm-form"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       <h3>Create Alarm</h3>
 
-      <label>Alarm Label</label>
-      <input
-        type="text"
-        placeholder="Morning Alarm"
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
-      />
+      <div className="field-group">
+        <label>Alarm Label</label>
+        <input
+          type="text"
+          placeholder="Morning Workout"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+        />
+      </div>
 
-      <label>Alarm Time</label>
-      <input
-        type="time"
-        value={time}
-        onChange={(e) => setTime(e.target.value)}
-      />
+      <div className="field-row">
+        <div className="field-group">
+          <label>Alarm Time</label>
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+          />
+        </div>
 
-      <label>Alarm Type</label>
-      <select
-        value={alarmType}
-        onChange={(e) => setAlarmType(e.target.value)}
-      >
-        <option value="daily">Daily</option>
-        <option value="weekday">Weekday</option>
-        <option value="weekend">Weekend</option>
-        <option value="one_time">One Time</option>
-        <option value="smart_adaptive">Smart Adaptive</option>
-      </select>
-
-      <label>Recurrence Days</label>
-      <input
-        type="text"
-        placeholder="MON,TUE,WED"
-        value={recurrenceDays}
-        onChange={(e) => setRecurrenceDays(e.target.value)}
-      />
-
-      {/* NEW: Challenge Selector UI */}
-      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
-        <label style={{ fontWeight: "bold", display: "block", marginBottom: "8px" }}>
-          Allowed Challenges (Leave blank for all)
-        </label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-          {availableChallenges.map((challenge) => (
-            <label key={challenge} style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "14px" }}>
-              <input
-                type="checkbox"
-                checked={preferredChallenges.includes(challenge)}
-                onChange={() => handleChallengeToggle(challenge)}
-              />
-              {challenge.replace("_", " ").toUpperCase()}
-            </label>
-          ))}
+        <div className="field-group">
+          <label>Alarm Type</label>
+          <select value={alarmType} onChange={(e) => setAlarmType(e.target.value)}>
+            {ALARM_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 
-      <div>
-        <label>
+      <div className="field-group">
+        <label>Recurrence Days</label>
+        <input
+          type="text"
+          placeholder="Mon,Tue,Wed"
+          value={recurrenceDays}
+          onChange={(e) => setRecurrenceDays(e.target.value)}
+        />
+      </div>
+
+      <div className="field-group">
+        <label>Allowed Challenges</label>
+        <p className="field-hint">Leave blank to allow all challenge types</p>
+        <motion.div
+          className="chip-grid"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
+          {AVAILABLE_CHALLENGES.map((challenge) => {
+            const active = preferredChallenges.includes(challenge);
+            return (
+              <motion.button
+                type="button"
+                key={challenge}
+                variants={staggerItem}
+                className={active ? "chip active" : "chip"}
+                onClick={() => handleChallengeToggle(challenge)}
+                whileTap={{ scale: 0.95 }}
+              >
+                {challenge.replace("_", " ")}
+              </motion.button>
+            );
+          })}
+        </motion.div>
+      </div>
+
+      <div className="field-row">
+        <label className="toggle-row">
           <input
             type="checkbox"
             checked={isActive}
             onChange={(e) => setIsActive(e.target.checked)}
           />
-          Is Active
+          Active
         </label>
-      </div>
 
-      <div>
-        <label>
+        <label className="toggle-row">
           <input
             type="checkbox"
             checked={snoozeEnabled}
@@ -163,16 +176,27 @@ function CreateAlarmForm({ onAlarmCreated }) {
         </label>
       </div>
 
-      <label>Snooze Limit</label>
-      <input
-        type="number"
-        min="0"
-        value={snoozeLimit}
-        onChange={(e) => setSnoozeLimit(Number(e.target.value))}
-      />
+      <div className="field-group">
+        <label>Snooze Limit</label>
+        <input
+          type="number"
+          min="0"
+          value={snoozeLimit}
+          onChange={(e) => setSnoozeLimit(Number(e.target.value))}
+        />
+      </div>
 
-      <button type="submit">Create Alarm</button>
-    </form>
+      {errorMsg && <p className="auth-error">{errorMsg}</p>}
+
+      <motion.button
+        type="submit"
+        className="btn-accent full-width"
+        disabled={submitting}
+        whileTap={{ scale: 0.97 }}
+      >
+        {submitting ? "Creating…" : "Create Alarm"}
+      </motion.button>
+    </motion.form>
   );
 }
 

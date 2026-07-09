@@ -1,60 +1,98 @@
-.login-container {
+.auth-container {
+  position: relative;
+  min-height: 100svh;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #f5f7fa;
+  overflow: hidden;
+  padding: 24px;
 }
 
-.login-container h1 {
-  margin-bottom: 30px;
-  color: #2c3e50;
-  text-align: center;
-  font-size: 28px;
-}
-
-.login-form {
+.auth-content {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  width: 300px;
-  background-color: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  align-items: center;
+  width: 100%;
+  max-width: 420px;
 }
 
-.login-form input {
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+.brand-mark {
+  font-size: 36px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 12px var(--accent-glow));
 }
 
-.login-form button {
-  padding: 10px;
-  font-size: 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+.auth-title {
+  font-size: 32px;
+  letter-spacing: -0.6px;
+  margin-bottom: 6px;
+  text-align: center;
 }
 
-.login-form button:hover {
-  background-color: #0056b3;
+.auth-subtitle {
+  color: var(--text-dim);
+  font-size: 15px;
+  margin-bottom: 28px;
+  text-align: center;
 }
+
+.auth-form {
+  width: 100%;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.input-group label {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.input-group input {
+  width: 100%;
+}
+
+.auth-error {
+  color: var(--ember);
+  background: var(--ember-bg);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  margin: 0;
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .register-text {
-  margin-top: 15px;
+  margin-top: 4px;
   text-align: center;
   font-size: 14px;
+  color: var(--text-dim);
 }
 
 .register-text a {
-  color: #007bff;
+  color: var(--accent);
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .register-text a:hover {
