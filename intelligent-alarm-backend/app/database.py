@@ -7,6 +7,9 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from motor.motor_asyncio import AsyncIOMotorClient
+import redis.asyncio as aioredis
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
 
 load_dotenv()
 
@@ -39,3 +42,33 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+
+# # Global pool — created once on startup, reused across all requests
+# redis_pool: aioredis.Redis | None = None
+
+# async def get_redis() -> aioredis.Redis:
+#     """FastAPI dependency — inject redis into any route."""
+#     return redis_pool
+
+# async def init_redis():
+#     """Call once in app startup event."""
+#     global redis_pool
+#     redis_pool = aioredis.from_url(
+#         REDIS_URL,
+#         encoding="utf-8",
+#         decode_responses=True,
+#     )
+#     # Test connection immediately so startup fails fast if Redis is down
+#     await redis_pool.ping()
+#     FastAPICache.init(RedisBackend(redis_pool), prefix="cogalarm-cache")
+#     print("✅ Redis connected")
+
+# async def close_redis():
+#     """Call once in app shutdown event."""
+#     global redis_pool
+#     if redis_pool:
+#         await redis_pool.aclose()
+#         print("Redis disconnected")
+        

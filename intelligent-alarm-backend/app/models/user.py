@@ -1,8 +1,8 @@
 import uuid
 import enum
-from datetime import datetime
+from datetime import datetime, time
 
-from sqlalchemy import String, Boolean, Enum, DateTime
+from sqlalchemy import String, Boolean, Enum, DateTime, Time, Float, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -44,6 +44,11 @@ class User(Base):
         Enum(DifficultyLevel), nullable=True
     )
     productivity_goal: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    target_bedtime:   Mapped[time | None] = mapped_column(Time(timezone=True), nullable=True)
+    target_wake_time: Mapped[time | None] = mapped_column(Time(timezone=True), nullable=True)
+    habit_score:      Mapped[float]           = mapped_column(Float,   default=0.0, nullable=False)
+    current_streak:   Mapped[int]             = mapped_column(Integer, default=0,   nullable=False)
     
     # NEW: Global preference for challenge types (comma-separated, e.g., "math,riddle")
     preferred_challenges: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -63,6 +68,7 @@ class User(Base):
     habits: Mapped[list["Habit"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email} role={self.role}>"

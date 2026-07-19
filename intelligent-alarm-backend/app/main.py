@@ -2,11 +2,12 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine
+from app.database import engine, init_redis, close_redis
 from app.models.base import Base
 # Import all models so SQLAlchemy knows they exist before creating tables
 from app.models import user, alarm, habit
 from app.api import alarms, auth, challenges, admin
+
 
 # Create all tables in the PostgreSQL database
 Base.metadata.create_all(bind=engine)
@@ -34,3 +35,12 @@ app.include_router(alarms.router)
 app.include_router(auth.router)
 app.include_router(challenges.router)
 app.include_router(admin.router)
+
+
+@app.on_event("startup")
+async def startup():
+    await init_redis()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await close_redis()

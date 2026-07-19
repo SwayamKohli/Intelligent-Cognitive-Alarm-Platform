@@ -7,7 +7,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - \app\.env
     depends_on:
       - db
     volumes:
@@ -51,8 +51,23 @@ services:
       - "27018:27018"
     volumes:
       - mongo_data:/data/db
+    
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: always
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   command: redis-server --appendonly yes   # persist data on restart
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
 
 
 volumes:
   postgres_data:
   mongo_data:
+  # redis_data:
