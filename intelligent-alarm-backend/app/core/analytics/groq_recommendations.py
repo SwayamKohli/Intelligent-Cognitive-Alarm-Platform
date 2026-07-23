@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Initialize the Groq client
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+groq_api_key = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=groq_api_key) if groq_api_key else None
 
 async def generate_ai_recommendations(user_name: str, telemetry_data: dict, habit_score: float) -> dict:
     """
@@ -32,6 +32,15 @@ async def generate_ai_recommendations(user_name: str, telemetry_data: dict, habi
         f"Challenge Failure Rate: {failure_rate}%\n\n"
         "Generate 1 sentence of actionable advice for each of the 4 categories based strictly on these metrics."
     )
+
+    if not client:
+        print("[WARNING] GROQ_API_KEY not configured. Returning fallback static recommendations.")
+        return {
+            "sleep": "Try going to bed 30 minutes earlier to improve your energy.",
+            "wake_up": "Place your phone across the room to reduce snoozing.",
+            "habit": "Consistency is key; try waking up at the same time on weekends.",
+            "productivity": "Complete your most difficult task immediately after waking up."
+        }
 
     try:
         chat_completion = client.chat.completions.create(

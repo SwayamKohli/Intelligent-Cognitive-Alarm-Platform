@@ -1,12 +1,10 @@
-# BOILERPLATE CODE
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, init_redis, close_redis
 from app.models.base import Base
 # Import all models so SQLAlchemy knows they exist before creating tables
 from app.models import user, alarm, habit
-from app.api import alarms, auth, challenges, admin
+from app.api import alarms, auth, challenges, admin, users, analytics
 
 
 # Create all tables in the PostgreSQL database
@@ -33,8 +31,10 @@ def read_root():
 
 app.include_router(alarms.router)
 app.include_router(auth.router)
+app.include_router(users.router)
 app.include_router(challenges.router)
 app.include_router(admin.router)
+app.include_router(analytics.router)
 
 
 @app.on_event("startup")

@@ -68,9 +68,13 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
         }
     ]
 
-    # ── Execute pipeline ──────────────────────────────────────
-    cursor  = challenge_logs_collection.aggregate(pipeline)
-    results = await cursor.to_list(length=1)
+    # ── Execute pipeline with exception fallback ─────────────
+    try:
+        cursor  = challenge_logs_collection.aggregate(pipeline)
+        results = await cursor.to_list(length=1)
+    except Exception as e:
+        print(f"[WARNING] Telemetry service MongoDB call fallback: {e}")
+        results = []
 
     # ── Return result or safe zero-state ──────────────────────
     # If user has NO logs yet (new user), return all zeros
