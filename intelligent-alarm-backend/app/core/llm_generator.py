@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+groq_api_key = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=groq_api_key) if groq_api_key else None
 MODEL = "llama-3.1-8b-instant"
 
 def generate_ai_challenge(challenge_type: str, difficulty: int, avoid_topics: list[str] = []) -> dict:

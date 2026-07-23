@@ -9,18 +9,26 @@ export default function RingingScreen({ route, navigation }: any) {
   const [challenge, setChallenge] = useState<any>(null);
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [streakState, setStreakState] = useState({ current: 0, target: 1 });
+  
+  //  Add Timer State
+  const [timeLeft, setTimeLeft] = useState(60);
   
   const soundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
     playAlarmSound();
     fetchChallenge();
-
-    return () => {
-      stopAlarmSound();
-    };
+    return () => { stopAlarmSound(); };
   }, []);
+
+  //  Timer logic
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
 
   const playAlarmSound = async () => {
     try {
@@ -45,14 +53,11 @@ export default function RingingScreen({ route, navigation }: any) {
   const fetchChallenge = async () => {
     try {
       setLoading(true);
-      setAnswer(''); // Clear input for the next challenge
+      setAnswer('');
+      setTimeLeft(60); // Reset timer for new challenge
       
-      // FIX: Passing alarm_id as a query parameter as expected by FastAPI
       const response = await api.get('/challenges/next', {
-        params: { 
-          alarm_id: alarmId,
-          challenge_type: 'random' 
-        }
+        params: { alarm_id: alarmId, challenge_type: 'random' }
       });
       
       setChallenge(response.data);
@@ -61,40 +66,42 @@ export default function RingingScreen({ route, navigation }: any) {
       }
     } catch (error) {
       console.error("Failed to fetch challenge:", error);
-      Alert.alert("Error", "Could not load challenge. Answer '1' to bypass.");
-      setChallenge({ problem: "Emergency Bypass: Type 1", difficulty: 1 });
+      Alert.alert("Error", "Could not load challenge.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerify = async () => {
+    if (!answer.trim() || submitting) return;
+    setSubmitting(true);
+
     try {
       const response = await api.post('/challenges/verify', {
         alarm_id: alarmId,
-        answer: answer.trim() // Backend uses normalize_text, but trimming UI spaces helps
+        answer: answer.trim() 
       });
 
       const { success, dismiss_alarm, current_streak, target_streak } = response.data;
-      
       setStreakState({ current: current_streak, target: target_streak });
 
       if (success) {
         if (dismiss_alarm) {
           await stopAlarmSound();
-          Alert.alert("Good Morning!", "Challenges complete. Alarm deactivated.");
+          Alert.alert("Great Job!", "Alarm dismissed.");
           navigation.goBack(); 
         } else {
-          // Success, but streak not met. Fetch the next challenge!
           fetchChallenge();
         }
       } else {
-        Alert.alert("Incorrect", "Try again. The alarm won't stop!");
+        Alert.alert("Incorrect", "Try again!");
         setAnswer('');
       }
     } catch (error) {
       console.error("Verification failed:", error);
       Alert.alert("Network Error", "Keep trying!");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -113,11 +120,45 @@ export default function RingingScreen({ route, navigation }: any) {
     }
   };
 
+  //  Dynamic Rendering based on the ML Engine's payload structure
+  const renderChallengeContent = () => {
+    if (!challenge || !challenge.content) return <Text style={styles.challengePrompt}>Loading...</Text>;
+
+    const { challenge_type, content } = challenge;
+
+    switch (challenge_type) {
+      case "word_scramble":
+        return (
+          <View>
+            <Text style={styles.challengePrompt}>{content.prompt}</Text>
+            <Text style={styles.scrambledWord}>{content.scrambled_word}</Text>
+          </View>
+        );
+      case "quiz":
+      case "logic":
+        return (
+          <View>
+            <Text style={styles.challengePrompt}>{content.prompt}</Text>
+            {content.options?.map((opt: string, idx: number) => (
+              <Text key={idx} style={styles.optionText}>{idx + 1}. {opt}</Text>
+            ))}
+          </View>
+        );
+      default:
+        // Math, Pattern, Riddle all use the standard prompt
+        return <Text style={styles.challengePrompt}>{content.prompt}</Text>;
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.alarmLabel}>{label || "WAKE UP!"}</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.alarmLabel}>{label || "WAKE UP!"}</Text>
+        <View style={[styles.timerPill, timeLeft <= 10 && styles.timerUrgent]}>
+          <Text style={styles.timerText}>{timeLeft}s</Text>
+        </View>
+      </View>
       
-      {/* Dynamic Streak Indicator */}
       <Text style={styles.streakText}>
         Challenge {streakState.current + 1} of {streakState.target}
       </Text>
@@ -126,15 +167,7 @@ export default function RingingScreen({ route, navigation }: any) {
         <ActivityIndicator size="large" color="#FFD700" style={{ marginVertical: 30 }} />
       ) : (
         <View style={styles.challengeBox}>
-          {/* 
-            Bulletproof rendering:
-            1. Try 'problem' (schema standard)
-            2. Try 'question' (common ML generator output)
-            3. If neither exist, print the raw JSON so we can debug the payload!
-          */}
-          <Text style={styles.challengePrompt}>
-            {challenge?.problem || challenge?.question || (challenge ? JSON.stringify(challenge) : "No challenge data received")}
-          </Text>
+          {renderChallengeContent()}
         </View>
       )}
 
@@ -146,10 +179,15 @@ export default function RingingScreen({ route, navigation }: any) {
         onChangeText={setAnswer}
         keyboardType="default"
         autoCapitalize="none"
+        editable={!loading && !submitting}
       />
 
-      <TouchableOpacity style={styles.verifyButton} onPress={handleVerify}>
-        <Text style={styles.verifyText}>VERIFY ANSWER</Text>
+      <TouchableOpacity 
+        style={[styles.verifyButton, (submitting || loading) && styles.disabledButton]} 
+        onPress={handleVerify}
+        disabled={submitting || loading}
+      >
+        <Text style={styles.verifyText}>{submitting ? "CHECKING..." : "VERIFY ANSWER"}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.snoozeButton} onPress={handleSnooze}>
@@ -161,15 +199,23 @@ export default function RingingScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#8B0000', padding: 20, justifyContent: 'center', alignItems: 'center' },
-  alarmLabel: { fontSize: 40, fontWeight: 'bold', color: '#FFF', marginBottom: 10, textAlign: 'center' },
-  streakText: { fontSize: 18, color: '#FFD700', marginBottom: 30, fontWeight: 'bold' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 10 },
+  alarmLabel: { fontSize: 32, fontWeight: 'bold', color: '#FFF' },
+  timerPill: { backgroundColor: '#333', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20 },
+  timerUrgent: { backgroundColor: '#FF5252' },
+  timerText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  
+  streakText: { fontSize: 18, color: '#FFD700', marginBottom: 20, fontWeight: 'bold' },
   
   challengeBox: { backgroundColor: '#1E1E1E', padding: 30, borderRadius: 15, marginBottom: 30, width: '100%', alignItems: 'center', borderWidth: 2, borderColor: '#FFD700' },
-  challengePrompt: { fontSize: 24, fontWeight: 'bold', color: '#FFF', textAlign: 'center' },
+  challengePrompt: { fontSize: 24, fontWeight: 'bold', color: '#FFF', textAlign: 'center', marginBottom: 10 },
+  scrambledWord: { fontSize: 32, fontWeight: '900', color: '#FF5252', letterSpacing: 5, textAlign: 'center' },
+  optionText: { fontSize: 18, color: '#AAA', marginTop: 5 },
   
   input: { backgroundColor: '#FFF', color: '#000', padding: 20, borderRadius: 10, fontSize: 20, width: '100%', marginBottom: 30, textAlign: 'center', fontWeight: 'bold' },
   
   verifyButton: { backgroundColor: '#FFD700', padding: 20, borderRadius: 10, width: '100%', alignItems: 'center', marginBottom: 20 },
+  disabledButton: { backgroundColor: '#888' },
   verifyText: { color: '#000', fontSize: 20, fontWeight: 'bold' },
   
   snoozeButton: { backgroundColor: '#555', padding: 15, borderRadius: 10, width: '100%', alignItems: 'center' },

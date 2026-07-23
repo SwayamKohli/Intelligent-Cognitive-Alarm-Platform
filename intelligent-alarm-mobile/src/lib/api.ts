@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 
 // Use 10.0.2.2 for Android Emulator, localhost for iOS Simulator
 const BASE_URL = "http://192.168.1.10:8000";
+// const BASE_URL = "http://10.196.126.173:8000";
 
 const api = axios.create({
   baseURL: BASE_URL,

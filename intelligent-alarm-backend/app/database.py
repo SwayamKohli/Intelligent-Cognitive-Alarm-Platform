@@ -55,15 +55,19 @@ async def get_redis() -> aioredis.Redis:
 async def init_redis():
     """Call once in app startup event."""
     global redis_pool
-    redis_pool = aioredis.from_url(
-        REDIS_URL,
-        encoding="utf-8",
-        decode_responses=True,
-    )
-    # Test connection immediately so startup fails fast if Redis is down
-    await redis_pool.ping()
-    FastAPICache.init(RedisBackend(redis_pool), prefix="cogalarm-cache")
-    print("✅ Redis connected")
+    try:
+        redis_pool = aioredis.from_url(
+            REDIS_URL,
+            encoding="utf-8",
+            decode_responses=True,
+        )
+        await redis_pool.ping()
+        FastAPICache.init(RedisBackend(redis_pool), prefix="cogalarm-cache")
+        print("[INFO] Redis connected")
+    except Exception as e:
+        print(f"[WARNING] Redis connection failed: {e}. Falling back to InMemoryBackend for caching.")
+        from fastapi_cache.backends.inmemory import InMemoryBackend
+        FastAPICache.init(InMemoryBackend(), prefix="cogalarm-cache")
 
 async def close_redis():
     """Call once in app shutdown event."""
