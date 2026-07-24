@@ -6,6 +6,7 @@ import AlarmModal from "./AlarmModal";
 import CreateAlarmForm from "./CreateAlarmForm";
 import { staggerContainer, staggerItem } from "../lib/motion";
 import "./Dashboard.css";
+import AnalyticsPanel from "./AnalyticsPanel";
 
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: "◈" },
@@ -32,9 +33,19 @@ function Dashboard() {
   const [profileName, setProfileName] = useState("");
   const [profileTimezone, setProfileTimezone] = useState("UTC");
   const [profileDifficulty, setProfileDifficulty] = useState("medium");
+  const [targetBedtime, setTargetBedtime] = useState("22:00");
+  const [targetWakeTime, setTargetWakeTime] = useState("06:00");
   const [globalPreferredChallenges, setGlobalPreferredChallenges] = useState([]);
   const [savingProfile, setSavingProfile] = useState(false);
   const [toast, setToast] = useState(null);
+  const [habitScore, setHabitScore] = useState(null);
+  const [recommendations, setRecommendations] = useState({
+  sleep: "",
+  wake_up: "",
+  habit: "",
+  productivity: "",
+});
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -52,13 +63,33 @@ function Dashboard() {
       setLoadingAlarms(false);
     }
   };
-
+  const fetchHabitScore = async () => {
+  setLoadingAnalytics(true);
+  try {
+    const { data } = await api.get("/analytics/habit-score");
+    setHabitScore(data);
+  } catch (error) {
+    console.log(error);
+  } finally {
+    setLoadingAnalytics(false);
+  }
+};
+  const fetchRecommendations = async () => {
+  try {
+    const { data } = await api.get("/analytics/recommendations");
+    setRecommendations(data);
+  } catch (error) {
+    console.log(error);
+  }
+};
   const fetchProfile = async () => {
     try {
       const { data } = await api.get("/users/profile");
       setProfileName(data.full_name || "");
       setProfileTimezone(data.timezone || "UTC");
       setProfileDifficulty(data.difficulty_preference || "medium");
+      setTargetBedtime(data.target_bedtime || "22:00");
+      setTargetWakeTime(data.target_wake_time || "06:00");
       if (data.preferred_challenges) {
         setGlobalPreferredChallenges(data.preferred_challenges.split(","));
       }
@@ -74,6 +105,8 @@ function Dashboard() {
         full_name: profileName,
         timezone: profileTimezone,
         difficulty_preference: profileDifficulty,
+        target_bedtime: targetBedtime,
+        target_wake_time: targetWakeTime,
         preferred_challenges:
           globalPreferredChallenges.length > 0
             ? globalPreferredChallenges.join(",")
@@ -116,6 +149,8 @@ function Dashboard() {
     }
     fetchAlarms();
     fetchProfile();
+    fetchHabitScore();
+    fetchRecommendations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
@@ -143,7 +178,12 @@ function Dashboard() {
     localStorage.removeItem("access_token");
     navigate("/login");
   };
+  const score =
+  habitScore?.overall_score ?? habitScore?.score ?? 0;
 
+const radius = 55;
+const circumference = 2 * Math.PI * radius;
+const progress = circumference - (score / 100) * circumference;
   return (
     <>
       <AnimatePresence>
@@ -252,6 +292,25 @@ function Dashboard() {
                       <option value="America/New_York">America/New_York (EST)</option>
                       <option value="Europe/London">Europe/London (GMT)</option>
                     </select>
+                  </div>
+                </div>
+                <div className="field-row">
+                  <div className="field-group">
+                    <label>Target Bedtime</label>
+                    <input
+                      type="time"
+                      value={targetBedtime}
+                      onChange={(e) => setTargetBedtime(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="field-group">
+                    <label>Target Wake Time</label>
+                    <input
+                      type="time"
+                      value={targetWakeTime}
+                      onChange={(e) => setTargetWakeTime(e.target.value)}
+                    />
                   </div>
                 </div>
 
@@ -373,7 +432,14 @@ function Dashboard() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.35 }}
               >
-                <p className="empty-state">Analytics dashboard coming soon.</p>
+                {loadingAnalytics ? (
+  <p className="empty-state">Loading analytics...</p>
+) : (
+  <AnalyticsPanel
+    habitScore={habitScore}
+    recommendations={recommendations}
+  />
+)}
               </motion.div>
             )}
           </AnimatePresence>
