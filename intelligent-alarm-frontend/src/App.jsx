@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Registration from "./pages/Registration";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import CoachDashboard from "./pages/CoachDashboard";
 
 function App() {
   const location = useLocation();
@@ -17,6 +18,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/coach/dashboard" element={<CoachDashboard />} />
       </Routes>
     </AnimatePresence>
   );
