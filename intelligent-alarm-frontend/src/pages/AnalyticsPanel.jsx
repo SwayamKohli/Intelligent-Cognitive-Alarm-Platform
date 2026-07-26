@@ -1,79 +1,161 @@
+import { motion } from "framer-motion";
+import { staggerContainer, staggerItem } from "../lib/motion";
+
+const RADIUS = 54;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+// Reads a breakdown field whether it's nested under `breakdown` or flat on the root
+function getMetric(habitScore, key) {
+  return habitScore?.breakdown?.[key] ?? habitScore?.[key] ?? 0;
+}
+
+const BADGES = [
+  {
+    key: "consistency",
+    label: "Consistency Champion",
+    icon: "◈",
+    getUnlocked: (h) => getMetric(h, "consistency") >= 80,
+  },
+  {
+    key: "challenge_rate",
+    label: "Challenge Master",
+    icon: "✦",
+    getUnlocked: (h) => getMetric(h, "challenge_rate") === 100,
+  },
+  {
+    key: "snooze_reduction",
+    label: "Snooze Buster",
+    icon: "◐",
+    getUnlocked: (h) => getMetric(h, "snooze_reduction") >= 50,
+  },
+  {
+    key: "sleep_adherence",
+    label: "Early Riser",
+    icon: "▲",
+    getUnlocked: (h) => getMetric(h, "sleep_adherence") >= 80,
+  },
+];
+
 const AnalyticsPanel = ({ habitScore, recommendations }) => {
-  const score = habitScore?.overall_score ?? habitScore?.score ?? 0;
+  const score = habitScore?.habit_score ?? habitScore?.overall_score ?? habitScore?.score ?? 0;
+  const offset = CIRCUMFERENCE - (Math.min(score, 100) / 100) * CIRCUMFERENCE;
+
+  const statusLabel =
+    score >= 80 ? "Excellent consistency" : score >= 60 ? "Good progress — keep going" : "Room to build your routine";
+
+  const recCards = [
+    { key: "sleep", label: "Sleep", text: recommendations?.sleep },
+    { key: "wake_up", label: "Wake-Up", text: recommendations?.wake_up },
+    { key: "habit", label: "Habit", text: recommendations?.habit },
+    { key: "productivity", label: "Productivity", text: recommendations?.productivity },
+  ];
+
+  const breakdownRows = [
+    { key: "consistency", label: "Consistency" },
+    { key: "challenge_rate", label: "Challenge Rate" },
+    { key: "snooze_reduction", label: "Snooze Reduction" },
+    { key: "sleep_adherence", label: "Sleep Adherence" },
+  ];
 
   return (
     <div className="analytics-panel">
-      <h2>📊 Analytics Dashboard</h2>
-
-      {/* Habit Score */}
       <div className="analytics-section">
         <div className="habit-score-card">
-          <h4>Overall Habit Score</h4>
+          <p className="score-eyebrow">Overall Habit Score</p>
 
-          <div className="score-circle">
-            <span>{score}%</span>
+          <div className="score-ring-wrapper">
+            <svg viewBox="0 0 130 130" className="score-ring">
+              <circle cx="65" cy="65" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+              <motion.circle
+                cx="65"
+                cy="65"
+                r={RADIUS}
+                fill="none"
+                stroke="url(#scoreGradient)"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={CIRCUMFERENCE}
+                initial={{ strokeDashoffset: CIRCUMFERENCE }}
+                animate={{ strokeDashoffset: offset }}
+                transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+                transform="rotate(-90 65 65)"
+              />
+              <defs>
+                <linearGradient id="scoreGradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#f4c542" />
+                  <stop offset="100%" stopColor="#b8862b" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="score-ring-value">
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+              >
+                {Math.round(score)}
+              </motion.span>
+              <small>/ 100</small>
+            </div>
           </div>
 
-          <p>
-            {score >= 80
-              ? "Excellent consistency!"
-              : score >= 60
-              ? "Good progress. Keep going!"
-              : "Let's improve your routine."}
-          </p>
+          <p className="score-status">{statusLabel}</p>
+
+          <div className="breakdown-list">
+            {breakdownRows.map((row) => {
+              const value = getMetric(habitScore, row.key);
+              return (
+                <div key={row.key} className="breakdown-row">
+                  <span className="breakdown-label">{row.label}</span>
+                  <div className="breakdown-bar-track">
+                    <motion.div
+                      className="breakdown-bar-fill"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(value, 100)}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    />
+                  </div>
+                  <span className="breakdown-value">{value}%</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Achievements */}
       <div className="analytics-section">
         <h3>Achievements</h3>
 
-        <div className="badges-grid">
-          <div className="badge-card">
-            <div>😴</div>
-            <h4>Sleep</h4>
-          </div>
-
-          <div className="badge-card">
-            <div>🌅</div>
-            <h4>Wake Up</h4>
-          </div>
-
-          <div className="badge-card">
-            <div>🔥</div>
-            <h4>Habit</h4>
-          </div>
-
-          <div className="badge-card">
-            <div>⚡</div>
-            <h4>Productivity</h4>
-          </div>
-        </div>
+        <motion.div className="badges-grid" variants={staggerContainer} initial="initial" animate="animate">
+          {BADGES.map((badge) => {
+            const unlocked = badge.getUnlocked(habitScore);
+            return (
+              <motion.div
+                key={badge.key}
+                className={unlocked ? "badge-card unlocked" : "badge-card"}
+                variants={staggerItem}
+                whileHover={unlocked ? { y: -3 } : {}}
+              >
+                <span className="badge-glyph">{badge.icon}</span>
+                <h4>{badge.label}</h4>
+                <span className="badge-state">{unlocked ? "Unlocked" : "Locked"}</span>
+              </motion.div>
+            );
+          })}
+        </motion.div>
       </div>
 
-      {/* AI Recommendations */}
       <div className="analytics-section">
-        <h3>AI Recommendations</h3>
+        <h3>Recommendations</h3>
 
-        <div className="recommendation-card">
-          <strong>😴 Sleep</strong>
-          <p>{recommendations?.sleep || "No recommendation available."}</p>
-        </div>
-
-        <div className="recommendation-card">
-          <strong>🌅 Wake Up</strong>
-          <p>{recommendations?.wake_up || "No recommendation available."}</p>
-        </div>
-
-        <div className="recommendation-card">
-          <strong>🔥 Habit</strong>
-          <p>{recommendations?.habit || "No recommendation available."}</p>
-        </div>
-
-        <div className="recommendation-card">
-          <strong>⚡ Productivity</strong>
-          <p>{recommendations?.productivity || "No recommendation available."}</p>
-        </div>
+        <motion.div className="recommendation-grid" variants={staggerContainer} initial="initial" animate="animate">
+          {recCards.map((rec) => (
+            <motion.div key={rec.key} className="recommendation-card" variants={staggerItem}>
+              <strong>{rec.label}</strong>
+              <p>{rec.text || "No recommendation available yet."}</p>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
     </div>
   );

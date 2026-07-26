@@ -306,6 +306,259 @@
   color: var(--ember);
 }
 
+/* Create alarm form */
+.create-alarm-form {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.create-alarm-form h3 {
+  color: var(--text-h);
+  font-size: 16px;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.toggle-row input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+/* Analytics */
+.analytics-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.analytics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.analytics-section h3 {
+  color: var(--text-h);
+  font-size: 16px;
+  margin: 0;
+  text-align: left;
+}
+
+.habit-score-card {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.02);
+  text-align: center;
+}
+
+.score-eyebrow {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin: 0 0 4px;
+}
+
+.score-ring-wrapper {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  margin: 12px auto;
+}
+
+.score-ring {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 12px var(--accent-glow));
+}
+
+.score-ring-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.score-ring-value span {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-h);
+  line-height: 1;
+}
+
+.score-ring-value small {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.score-status {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin: 0;
+}
+
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.badge-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 16px;
+  background: rgba(255, 255, 255, 0.015);
+  text-align: center;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.badge-card.unlocked {
+  opacity: 1;
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.badge-glyph {
+  display: inline-block;
+  font-size: 20px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.badge-card.unlocked .badge-glyph {
+  color: var(--accent);
+}
+
+.badge-card h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--text-h);
+}
+
+.badge-state {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+.badge-card.unlocked .badge-state {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.recommendation-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  text-align: left;
+}
+
+.recommendation-card strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-h);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.recommendation-card p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.rate-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.rate-badge.low {
+  background: rgba(255, 122, 69, 0.12);
+  color: var(--ember);
+}
+
+.rate-badge.mid {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.rate-badge.high {
+  background: rgba(143, 191, 110, 0.15);
+  color: var(--success);
+}
+
+.breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 40px;
+  align-items: center;
+  gap: 10px;
+}
+
+.breakdown-label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.breakdown-bar-track {
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.breakdown-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+  border-radius: 6px;
+}
+
+.breakdown-value {
+  font-size: 12px;
+  color: var(--text-h);
+  font-weight: 600;
+  text-align: right;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .dashboard-layout {
@@ -371,115 +624,8 @@
   }
 }
 
-.create-alarm-form {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.create-alarm-form h3 {
-  color: var(--text-h);
-  font-size: 16px;
-  margin-bottom: 8px;
-  text-align: left;
-}
-
-.toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.toggle-row input {
-  width: auto;
-  accent-color: var(--accent);
-}
-/* Analytics */
-.analytics-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.analytics-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.analytics-section h3 {
-  color: var(--text-h);
-  font-size: 18px;
-  margin: 0;
-}
-
-.habit-score-card {
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.02);
-  text-align: center;
-}
-
-.score-circle {
-  width: 120px;
-  height: 120px;
-  margin: 16px auto;
-  border-radius: 50%;
-  border: 6px solid var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-.badges-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 16px;
-}
-
-.badge-card {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.02);
-  text-align: center;
-}
-
-.badge-card div {
-  font-size: 28px;
-  margin-bottom: 10px;
-}
-
-.badge-card h4 {
-  margin: 0;
-  color: var(--text-h);
-}
-
-.recommendation-card {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.recommendation-card strong {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--text-h);
-}
-
-.recommendation-card p {
-  margin: 0;
-  color: var(--text);
-  line-height: 1.5;
+@media (max-width: 500px) {
+  .breakdown-row {
+    grid-template-columns: 90px 1fr 32px;
+  }
 }

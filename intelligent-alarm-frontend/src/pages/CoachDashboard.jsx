@@ -1,98 +1,107 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import api from "../services/api";
+import api from "../lib/api";
+import { staggerContainer, staggerItem } from "../lib/motion";
+import "./CoachDashboard.css";
+
+function initials(name) {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0].toUpperCase())
+    .join("");
+}
+
+function scoreTier(score) {
+  if (score >= 80) return "high";
+  if (score >= 50) return "mid";
+  return "low";
+}
 
 function CoachDashboard() {
-    const [users, setUsers] = useState([]);
-const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
-useEffect(() => {
-  const fetchUsers = async () => {
-    try {
-      const { data } = await api.get("/coach/users");
-      setUsers(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data } = await api.get("/coach/users");
+        setUsers(data);
+      } catch (error) {
+        console.error("Failed to fetch coach users:", error);
+        setErrorMsg("Failed to load assigned users.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchUsers();
-}, []);
-   const tableVariants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
+    fetchUsers();
+  }, []);
 
-const rowVariants = {
-  hidden: {
-    opacity: 0,
-    y: 10,
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.3,
-    },
-  },
-};
   return (
-    <motion.div
-      className="glass-card profile-card"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-    >
-      <h2>Coach Dashboard</h2>
+    <div className="coach-container">
+      <main className="coach-main">
+        <motion.h1
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          Coach Dashboard
+        </motion.h1>
+        <p className="coach-subtitle">Assigned users and their habit adherence</p>
 
-      <p>Assigned Users</p>
+        <motion.div
+          className="glass-card coach-panel"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          {errorMsg && <p className="auth-error">{errorMsg}</p>}
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Habit Score</th>
-          </tr>
-        </thead>
+          {loading ? (
+            <p className="empty-state">Loading assigned users…</p>
+          ) : users.length === 0 ? (
+            <p className="empty-state">No users assigned to this coach yet.</p>
+          ) : (
+            <div className="coach-table">
+              <div className="coach-table-header">
+                <span>User</span>
+                <span>Email</span>
+                <span>Target Schedule</span>
+                <span>Habit Score</span>
+              </div>
 
-        <motion.tbody
-  variants={tableVariants}
-  initial="hidden"
-  animate="visible"
->
-          
-  {loading ? (
-    <tr>
-      <td colSpan="3" style={{ textAlign: "center" }}>
-        Loading...
-      </td>
-    </tr>
-  ) : users.length === 0 ? (
-    <tr>
-      <td colSpan="3" style={{ textAlign: "center" }}>
-        No users available
-      </td>
-    </tr>
-  ) : (
-    users.map((user) => (
-      <motion.tr key={user.id} variants={rowVariants}>
-        <td>{user.name}</td>
-        <td>{user.email}</td>
-        <td>{user.habit_score ?? "N/A"}</td>
-      </motion.tr>
-    ))
-  )}
-
-        </motion.tbody>
-      </table>
-    </motion.div>
+              <motion.div variants={staggerContainer} initial="initial" animate="animate">
+                {users.map((user) => {
+                  const score = user.habit_score ?? 0;
+                  return (
+                    <motion.div
+                      key={user.id}
+                      className="coach-table-row"
+                      variants={staggerItem}
+                      whileHover={{ backgroundColor: "rgba(255,255,255,0.03)" }}
+                    >
+                      <span className="user-cell">
+                        <span className="user-avatar">{initials(user.full_name)}</span>
+                        {user.full_name || "User"}
+                      </span>
+                      <span className="user-email">{user.email}</span>
+                      <span>
+                        {user.bedtime ? `${user.bedtime} – ${user.wake_time}` : "Not set"}
+                      </span>
+                      <span className={`rate-badge ${scoreTier(score)}`}>{score}%</span>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            </div>
+          )}
+        </motion.div>
+      </main>
+    </div>
   );
 }
 

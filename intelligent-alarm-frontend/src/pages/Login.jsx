@@ -35,9 +35,13 @@ function Login() {
       localStorage.setItem("access_token", data.access_token);
 
       const { data: profile } = await api.get("/users/profile");
+      const userRole = profile.role?.toLowerCase();
 
-      if (profile.role?.toLowerCase() === "admin") {
+      // THREE-WAY ROLE ROUTING
+      if (userRole === "admin") {
         navigate("/admin/dashboard");
+      } else if (userRole === "wellness_coach") {
+        navigate("/coach/dashboard");
       } else {
         navigate("/dashboard");
       }
