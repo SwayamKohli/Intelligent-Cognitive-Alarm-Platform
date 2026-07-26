@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { AlarmClock, LogOut, Users, Activity, PauseCircle } from 'lucide-react-native';
 import api from '../lib/api';
+import { colors, radius, spacing, typography } from '../theme';
+
+function tierColor(rate: number) {
+  if (rate > 40) return { bg: colors.emberBg, text: colors.ember };
+  if (rate > 20) return { bg: colors.accentBg, text: colors.accent };
+  return { bg: colors.successBg, text: colors.success };
+}
 
 export default function AdminScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
@@ -14,14 +22,12 @@ export default function AdminScreen({ navigation }: any) {
 
   const fetchMetrics = async (isRefresh = false) => {
     try {
-      if (isRefresh) setRefreshing(true);
-      else setLoading(true);
-
+      isRefresh ? setRefreshing(true) : setLoading(true);
       const { data } = await api.get('/admin/metrics');
       setMetrics(data);
-    } catch (error: any) {
-      console.error("Admin fetch error:", error);
-      Alert.alert("Access Denied", "Could not load admin metrics.");
+    } catch (error) {
+      console.error('Admin fetch error:', error);
+      Alert.alert('Access Denied', 'Could not load admin metrics.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -33,59 +39,48 @@ export default function AdminScreen({ navigation }: any) {
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
+  const statCards = [
+    { icon: Users, label: 'Total Registered Users', value: metrics?.user_growth?.total_registered ?? 0 },
+    { icon: Activity, label: 'Daily Active Users', value: metrics?.user_growth?.active_daily ?? 0 },
+    { icon: PauseCircle, label: 'Average Active Snoozes', value: metrics?.global_snooze?.average_active_snoozes ?? 0 },
+    { icon: AlarmClock, label: 'Total Active Alarms', value: metrics?.global_snooze?.total_active_alarms ?? 0 },
+  ];
+
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#FFD700" />
-        <Text style={styles.loadingText}>Loading Admin Console...</Text>
+        <ActivityIndicator size="large" color={colors.accent} />
+        <Text style={styles.loadingText}>Loading admin console…</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView 
-      style={styles.container} 
+    <ScrollView
+      style={styles.container}
       contentContainerStyle={{ paddingBottom: 60 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchMetrics(true)} tintColor="#FFD700" />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchMetrics(true)} tintColor={colors.accent} />}
     >
       <View style={styles.headerRow}>
-        <Text style={styles.header}>⏰ Admin Console</Text>
-        <TouchableOpacity onPress={handleLogout}>
-          <Text style={styles.logoutText}>Sign Out</Text>
+        <Text style={styles.header}>Admin Console</Text>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <LogOut color={colors.ember} size={18} />
         </TouchableOpacity>
       </View>
 
       <Text style={styles.subHeader}>Platform Overview</Text>
 
-      {/* KPI STAT CARDS */}
       <View style={styles.grid}>
-        <View style={styles.card}>
-          <Text style={styles.cardIcon}>◆</Text>
-          <Text style={styles.cardLabel}>Total Registered Users</Text>
-          <Text style={styles.cardValue}>{metrics?.user_growth?.total_registered ?? 0}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardIcon}>▲</Text>
-          <Text style={styles.cardLabel}>Daily Active Users</Text>
-          <Text style={styles.cardValue}>{metrics?.user_growth?.active_daily ?? 0}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardIcon}>⏸</Text>
-          <Text style={styles.cardLabel}>Average Active Snoozes</Text>
-          <Text style={styles.cardValue}>{metrics?.global_snooze?.average_active_snoozes ?? 0}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardIcon}>⏰</Text>
-          <Text style={styles.cardLabel}>Total Active Alarms</Text>
-          <Text style={styles.cardValue}>{metrics?.global_snooze?.total_active_alarms ?? 0}</Text>
-        </View>
+        {statCards.map((card) => (
+          <View key={card.label} style={styles.card}>
+            <card.icon color={colors.accent} size={18} strokeWidth={1.75} />
+            <Text style={styles.cardLabel}>{card.label}</Text>
+            <Text style={styles.cardValue}>{card.value}</Text>
+          </View>
+        ))}
       </View>
 
-      {/* ENGINE FAILURE TABLE */}
-      <Text style={[styles.subHeader, { marginTop: 25 }]}>Engine Failure Rates</Text>
+      <Text style={[styles.subHeader, { marginTop: spacing.lg }]}>Engine Failure Rates</Text>
       <View style={styles.tableCard}>
         <View style={styles.tableHeader}>
           <Text style={[styles.th, { flex: 2 }]}>Engine</Text>
@@ -94,17 +89,22 @@ export default function AdminScreen({ navigation }: any) {
           <Text style={styles.th}>Rate</Text>
         </View>
 
-        {metrics?.engine_failure_rates?.length === 0 ? (
+        {!metrics?.engine_failure_rates?.length ? (
           <Text style={styles.emptyText}>No engine telemetry available.</Text>
         ) : (
-          metrics?.engine_failure_rates?.map((e: any, index: number) => (
-            <View key={index} style={styles.tableRow}>
-              <Text style={[styles.td, { flex: 2, fontWeight: 'bold' }]}>{e.engine}</Text>
-              <Text style={styles.td}>{e.attempts}</Text>
-              <Text style={styles.td}>{e.failures}</Text>
-              <Text style={[styles.td, styles.rateBadge]}>{e.failure_rate_percentage}%</Text>
-            </View>
-          ))
+          metrics.engine_failure_rates.map((e: any, index: number) => {
+            const tier = tierColor(e.failure_rate_percentage);
+            return (
+              <View key={index} style={styles.tableRow}>
+                <Text style={[styles.td, { flex: 2, fontWeight: '700', textAlign: 'left' }]}>{e.engine}</Text>
+                <Text style={styles.td}>{e.attempts}</Text>
+                <Text style={styles.td}>{e.failures}</Text>
+                <View style={[styles.rateBadge, { backgroundColor: tier.bg }]}>
+                  <Text style={[styles.rateBadgeText, { color: tier.text }]}>{e.failure_rate_percentage}%</Text>
+                </View>
+              </View>
+            );
+          })
         )}
       </View>
     </ScrollView>
@@ -112,25 +112,52 @@ export default function AdminScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212', padding: 20 },
-  centerContainer: { flex: 1, backgroundColor: '#121212', justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: '#888', marginTop: 15 },
+  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg },
+  centerContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { ...typography.caption, marginTop: 15 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 40, marginBottom: 10 },
-  header: { fontSize: 26, fontWeight: 'bold', color: '#FFD700' },
-  logoutText: { color: '#FF5252', fontWeight: 'bold', fontSize: 16 },
-  subHeader: { fontSize: 20, fontWeight: 'bold', color: '#FFF', marginBottom: 15 },
-  
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
-  card: { width: '48%', backgroundColor: '#1E1E1E', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#333' },
-  cardIcon: { fontSize: 20, color: '#FFD700', marginBottom: 5 },
-  cardLabel: { color: '#AAA', fontSize: 12, marginBottom: 8 },
-  cardValue: { color: '#FFF', fontSize: 24, fontWeight: 'bold' },
+  header: { ...typography.h1, fontSize: 24 },
+  logoutBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    backgroundColor: colors.emberBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subHeader: { ...typography.h2, marginBottom: spacing.sm + 4 },
 
-  tableCard: { backgroundColor: '#1E1E1E', borderRadius: 12, borderWidth: 1, borderColor: '#333', padding: 15 },
-  tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#333', paddingBottom: 10, marginBottom: 10 },
-  th: { flex: 1, color: '#AAA', fontSize: 13, fontWeight: 'bold', textAlign: 'center' },
-  tableRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#222', alignItems: 'center' },
-  td: { flex: 1, color: '#FFF', fontSize: 14, textAlign: 'center', textTransform: 'capitalize' },
-  rateBadge: { color: '#FFD700', fontWeight: 'bold' },
-  emptyText: { color: '#888', textAlign: 'center', marginVertical: 20 }
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
+  card: {
+    width: '48%',
+    backgroundColor: colors.bgCard,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 6,
+  },
+  cardLabel: { color: colors.textDim, fontSize: 12 },
+  cardValue: { color: colors.textHigh, fontSize: 24, fontWeight: '700' },
+
+  tableCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md - 1,
+  },
+  tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 10, marginBottom: 10 },
+  th: { flex: 1, color: colors.textDim, fontSize: 12, fontWeight: '700', textAlign: 'center', textTransform: 'uppercase' },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.04)',
+    alignItems: 'center',
+  },
+  td: { flex: 1, color: colors.text, fontSize: 13, textAlign: 'center', textTransform: 'capitalize' },
+  rateBadge: { flex: 1, alignItems: 'center', paddingVertical: 3, borderRadius: radius.pill, marginHorizontal: 4 },
+  rateBadgeText: { fontSize: 12, fontWeight: '700' },
+  emptyText: { color: colors.textDim, textAlign: 'center', marginVertical: 20 },
 });

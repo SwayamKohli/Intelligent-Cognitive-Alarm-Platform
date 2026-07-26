@@ -1,101 +1,130 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Mail, Lock } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
 import api from '../lib/api';
+import AuthLayout from '../components/AuthLayout';
+import AuthInput from '../components/AuthInput';
+import { colors, radius, spacing, typography } from '../theme';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleLogin = async () => {
+    setErrorMsg('');
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter your email and password.");
+      setErrorMsg('Please enter your email and password.');
       return;
     }
 
+    setLoading(true);
     try {
-      setLoading(true);
-      // FastAPI OAuth2 strictly requires form-urlencoded data
       const formData = `username=${encodeURIComponent(email.trim())}&password=${encodeURIComponent(password)}`;
-      
       const response = await api.post('/users/login', formData, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
 
       if (response.data.access_token) {
         await SecureStore.setItemAsync('access_token', response.data.access_token);
-        
-        // Check RBAC Role from Profile
+
         const profileRes = await api.get('/users/profile');
         const userRole = profileRes.data.role?.toLowerCase();
 
         if (userRole === 'admin') {
-          Alert.alert("Admin Access", "Welcome to the Admin Console.");
           navigation.replace('AdminDashboard');
         } else if (userRole === 'wellness_coach') {
-          Alert.alert("Coach Portal", "Welcome, Coach! Loading client rosters.");
           navigation.replace('CoachDashboard');
         } else {
-          Alert.alert("Success", "Welcome back to your Cognitive Alarm!");
           navigation.replace('Dashboard');
         }
       }
-    } catch (error: any) {
-      console.error("Login failed:", error);
-      Alert.alert("Login Failed", "Invalid credentials or network issue. Make sure your local server is running!");
+    } catch (error) {
+      console.error('Login failed:', error);
+      setErrorMsg('Invalid credentials or the server is unreachable.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Welcome Back</Text>
-      
-      <TextInput 
-        style={styles.input} 
-        placeholder="Email" 
-        placeholderTextColor="#888"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      
-      <TextInput 
-        style={styles.input} 
-        placeholder="Password" 
-        placeholderTextColor="#888"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      
-      <TouchableOpacity 
-        style={[styles.button, loading && { opacity: 0.7 }]} 
-        onPress={handleLogin}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#000" />
-        ) : (
-          <Text style={styles.buttonText}>Log In</Text>
-        )}
-      </TouchableOpacity>
+    <AuthLayout>
+      <Text style={styles.title}>Welcome back</Text>
+      <Text style={styles.subtitle}>Sign in to your Cognitive Alarm Platform</Text>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Register')} disabled={loading}>
-        <Text style={styles.linkText}>Don't have an account? Register</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.card}>
+        <AuthInput
+          icon={<Mail color={colors.textDim} size={18} />}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+
+        <AuthInput
+          icon={<Lock color={colors.textDim} size={18} />}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+
+        {errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}
+
+        <TouchableOpacity onPress={handleLogin} disabled={loading} activeOpacity={0.85}>
+          <LinearGradient
+            colors={[colors.accent, colors.accentDeep]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.button, loading && { opacity: 0.7 }]}
+          >
+            {loading ? (
+              <ActivityIndicator color="#0A0A0B" />
+            ) : (
+              <Text style={styles.buttonText}>Login</Text>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate('Register')} disabled={loading}>
+          <Text style={styles.linkText}>
+            Don't have an account? <Text style={styles.linkAccent}>Register</Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#121212' },
-  header: { fontSize: 28, fontWeight: 'bold', color: '#FFD700', marginBottom: 30, textAlign: 'center' },
-  input: { backgroundColor: '#1E1E1E', color: '#FFF', padding: 15, borderRadius: 8, marginBottom: 15, borderWidth: 1, borderColor: '#333', fontSize: 16 },
-  button: { backgroundColor: '#FFD700', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#000', fontWeight: 'bold', fontSize: 16 },
-  linkText: { color: '#FFD700', textAlign: 'center', marginTop: 25, fontSize: 14 }
+  title: { ...typography.h1, textAlign: 'center', marginBottom: spacing.xs },
+  subtitle: { ...typography.caption, textAlign: 'center', marginBottom: spacing.lg },
+  card: {
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+  },
+  button: {
+    borderRadius: radius.md,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  buttonText: { color: '#0A0A0B', fontWeight: '700', fontSize: 15 },
+  linkText: { color: colors.textDim, textAlign: 'center', marginTop: spacing.lg, fontSize: 13 },
+  linkAccent: { color: colors.accent, fontWeight: '600' },
+  error: {
+    color: colors.ember,
+    backgroundColor: colors.emberBg,
+    borderRadius: radius.sm,
+    padding: 10,
+    fontSize: 13,
+    marginBottom: spacing.sm,
+  },
 });

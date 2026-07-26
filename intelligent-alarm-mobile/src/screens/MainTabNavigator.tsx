@@ -1,9 +1,10 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { AlarmClock, BarChart3, User } from 'lucide-react-native';
 import DashboardScreen from './DashboardScreen';
 import AnalyticsScreen from './AnalyticsScreen';
 import ProfileScreen from './ProfileScreen';
+import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
@@ -13,26 +14,29 @@ export default function MainTabNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1E1E1E',
-          borderTopColor: '#333',
+          backgroundColor: colors.bgElevated,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 65,
+          height: 68,
           paddingBottom: 10,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#FFD700',
-        tabBarInactiveTintColor: '#888',
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textDim,
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: 'bold',
+          fontSize: 11,
+          fontWeight: '600',
         },
-        tabBarIcon: ({ focused }) => {
-          let icon = '';
-          if (route.name === 'Alarms') icon = '⏰';
-          else if (route.name === 'Analytics') icon = '📊';
-          else if (route.name === 'Profile') icon = '👤';
-
-          return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.6 }}>{icon}</Text>;
+        tabBarIcon: ({ focused, color }) => {
+          const size = 22;
+          const strokeWidth = focused ? 2.2 : 1.8;
+          if (route.name === 'Alarms') {
+            return <AlarmClock color={color} size={size} strokeWidth={strokeWidth} />;
+          }
+          if (route.name === 'Analytics') {
+            return <BarChart3 color={color} size={size} strokeWidth={strokeWidth} />;
+          }
+          return <User color={color} size={size} strokeWidth={strokeWidth} />;
         },
       })}
     >
