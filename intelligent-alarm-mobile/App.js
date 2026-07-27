@@ -1,6 +1,7 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useEffect } from 'react';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as Notifications from 'expo-notifications';
 
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
@@ -12,11 +13,41 @@ import RingingScreen from './src/screens/RingingScreen';
 import AdminScreen from './src/screens/AdminScreen';
 import CoachScreen from './src/screens/CoachScreen';
 
+// Import our new native notification permission helper
+import { registerForPushNotificationsAsync } from './src/lib/notifications';
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const navigationRef = useNavigationContainerRef();
+
+  useEffect(() => {
+    // 1. Request OS notification permissions on app launch
+    registerForPushNotificationsAsync();
+
+    // 2. Global Lock-Screen Interceptor: Catches when a user taps an OS alarm notification
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      
+      if (data && data.alarmId) {
+        console.log(`[Notification Interceptor] Tapped alarm ID: ${data.alarmId}. Routing to RingingScreen...`);
+        
+        if (navigationRef.isReady()) {
+          navigationRef.navigate('Ringing', { 
+            alarmId: data.alarmId, 
+            label: data.label || 'Cognitive Alarm' 
+          });
+        }
+      }
+    });
+
+    return () => {
+      responseSubscription.remove();
+    };
+  }, []);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />

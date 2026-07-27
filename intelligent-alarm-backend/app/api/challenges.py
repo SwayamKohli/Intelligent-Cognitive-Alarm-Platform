@@ -8,6 +8,7 @@ import string
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from thefuzz import fuzz
 
 from app.database import get_db
 from app.models.alarm import Alarm
@@ -139,17 +140,25 @@ async def verify_challenge(
             detail="No active challenge found. Request a new one via GET /challenges/next.",
         )
 
-    # --- UX Fix: Normalize answers to forgive minor formatting differences ---
+    # --- UX Fix: Normalize answers and apply fuzzy Levenshtein matching ---
     norm_user = normalize_text(body.answer)
     norm_correct = normalize_text(state["answer"])
+    
+    # Calculate Levenshtein distance ratio (0 to 100)
+    similarity_score = fuzz.ratio(norm_user, norm_correct)
     
     print(f"\n[DEBUG] Verification Engine:")
     print(f"        User Input (Raw)    : '{body.answer}'")
     print(f"        User Input (Norm)   : '{norm_user}'")
     print(f"        Expected   (Norm)   : '{norm_correct}'")
+    print(f"        Fuzzy Similarity    : {similarity_score}%")
 
-    # Check for exact match on normalized strings OR if the expected word is found inside the user's string
-    success = (norm_user == norm_correct) or (norm_correct != "" and norm_correct in norm_user.split())
+    # Success if exact match, word boundary match, OR >= 85% fuzzy similarity
+    success = (
+        (norm_user == norm_correct)
+        or (norm_correct != "" and norm_correct in norm_user.split())
+        or (norm_correct != "" and similarity_score >= 85)
+    )
     # -------------------------------------------------------------------------
     
     dismiss_alarm = False

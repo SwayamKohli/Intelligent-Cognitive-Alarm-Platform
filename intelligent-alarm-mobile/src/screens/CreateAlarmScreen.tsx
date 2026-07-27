@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, S
 import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../lib/api';
 import { colors, radius, spacing, typography } from '../theme';
+// Import our new native notification helper
+import { scheduleNativeAlarmNotification } from '../lib/notifications';
 
 const CHALLENGE_OPTIONS = ['math', 'memory', 'pattern', 'logic', 'word_scramble', 'riddle', 'quiz'];
 const ALARM_TYPE_OPTIONS = ['one_time', 'daily', 'weekday', 'weekend', 'smart_adaptive'];
@@ -45,7 +47,18 @@ export default function CreateAlarmScreen({ navigation }: any) {
         snooze_limit: 3,
       };
 
-      await api.post('/alarms/', payload);
+      // Save to PostgreSQL backend
+      const response = await api.post('/alarms/', payload);
+      
+      // Schedule the native OS lock-screen alarm using the ID returned from PostgreSQL
+      if (response.data && response.data.id) {
+        await scheduleNativeAlarmNotification(
+          response.data.id,
+          label || 'Cognitive Alarm',
+          timeString
+        );
+      }
+
       navigation.goBack();
     } catch (error: any) {
       console.error('Failed to create alarm:', error.response?.data || error.message);
