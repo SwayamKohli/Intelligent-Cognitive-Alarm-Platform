@@ -37,8 +37,8 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://alarm_app_user:user_password@cognitive-alarm-db.cp4ws0am6gqf.ap-south-1.rds.amazonaws.com:5432/cognitive_alarm_db
-      MONGO_URL: mongodb+srv://alarm_app_user:user_password@cognitive-alarm-cluster.vfxjrvz.mongodb.net/cognitive_alarm_logs?appName=cognitive-alarm-cluster
+      DATABASE_URL: postgresql://alarm_user:alarm_password@127.0.0.1:5433/alarm_db
+      MONGO_URL: mongodb://mongo_user:mongo_password@localhost:27018
       ADMIN_EMAIL: techlead@gmail.com
       ADMIN_PASSWORD: TechLeadPassword
       ADMIN_NAME: Tech Lead
