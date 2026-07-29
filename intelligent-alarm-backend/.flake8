@@ -1,0 +1,9 @@
+[flake8]
+max-line-length = 100
+exclude = .git,__pycache__,alembic/versions,venv,.venv,scripts
+ignore = E203, W503, E402, F821, E501, E226
+per-file-ignores =
+    alembic/env.py:F401
+    scripts/admin_seed.py:F401
+    scripts/create_tables_rds.py:F401
+    app/main.py:F401

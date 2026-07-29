@@ -3,7 +3,7 @@ import joblib
 import pandas as pd
 
 # Load the model artifact (which now contains the model + encoders)
-MODEL_PATH = os.path.join(os.path.dirname(__file__), '../../models/adaptive_model_v2.pkl')
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "../../models/adaptive_model_v2.pkl")
 
 try:
     model_artifact = joblib.load(MODEL_PATH)
@@ -16,11 +16,12 @@ except Exception as e:
     target_encoder = None
     print(f"Warning: V2 ML model artifact not found or invalid. Using fallback logic. ({e})")
 
+
 def predict_next_challenge(
-    snooze_count: int, 
-    historical_success_rate: float = 0.75, 
-    avg_time_taken_ms: int = 5000, 
-    last_failed_type: str = "none"
+    snooze_count: int,
+    historical_success_rate: float = 0.75,
+    avg_time_taken_ms: int = 5000,
+    last_failed_type: str = "none",
 ) -> dict:
     """
     Ingests multi-dimensional user telemetry and uses the V2 Multi-Output Scikit-learn model
@@ -31,7 +32,7 @@ def predict_next_challenge(
         return {
             "challenge_type": "math",
             "difficulty": min(5, 1 + snooze_count),
-            "target_streak": min(3, max(1, snooze_count))
+            "target_streak": min(3, max(1, snooze_count)),
         }
 
     # Safely encode the categorical feature (handle unseen labels gracefully)
@@ -43,18 +44,23 @@ def predict_next_challenge(
 
     # Format the input exactly as the V2 model was trained
     input_features = pd.DataFrame(
-        [[snooze_count, historical_success_rate, avg_time_taken_ms, encoded_last_failed]], 
-        columns=['snooze_count', 'historical_success_rate', 'avg_time_taken_ms', 'last_failed_type']
+        [[snooze_count, historical_success_rate, avg_time_taken_ms, encoded_last_failed]],
+        columns=[
+            "snooze_count",
+            "historical_success_rate",
+            "avg_time_taken_ms",
+            "last_failed_type",
+        ],
     )
-    
+
     # Predict returns a 2D array [[type_encoded, difficulty, streak]], so grab the first row
     predictions = model.predict(input_features)[0]
-    
+
     # Decode the predicted challenge type back into a readable string
     predicted_type_str = target_encoder.inverse_transform([int(predictions[0])])[0]
-    
+
     return {
         "challenge_type": predicted_type_str,
         "difficulty": int(predictions[1]),
-        "target_streak": int(predictions[2])
+        "target_streak": int(predictions[2]),
     }

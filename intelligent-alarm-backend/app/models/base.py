@@ -8,6 +8,7 @@ class GUID(TypeDecorator):
     """Platform-independent UUID type.
     Uses PostgreSQL's native UUID when available, otherwise stores as CHAR(32).
     """
+
     impl = CHAR
     cache_ok = True
 
