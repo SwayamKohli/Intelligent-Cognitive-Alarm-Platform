@@ -1,7 +1,8 @@
 import asyncio
-from database import client, challenge_logs_collection
+from app.database import client, challenge_logs_collection
+import pytest
 
-
+@pytest.mark.asyncio
 async def test_connection():
     try:
         # Verify the connection is alive

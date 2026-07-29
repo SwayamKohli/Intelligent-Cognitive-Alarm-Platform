@@ -9,28 +9,37 @@ from app.api.auth import get_current_user
 
 router = APIRouter(tags=["Users & Coach"])
 
+
 def require_wellness_coach(current_user: User = Depends(get_current_user)):
     """Strictly requires the WELLNESS_COACH role."""
-    role_str = str(current_user.role.value if hasattr(current_user.role, 'value') else current_user.role).lower()
+    role_str = str(
+        current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+    ).lower()
     if current_user.role != UserRole.WELLNESS_COACH and role_str != "wellness_coach":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access Denied: Wellness Coach privileges required."
+            detail="Access Denied: Wellness Coach privileges required.",
         )
     return current_user
+
 
 @router.get("/users/profile", response_model=UserResponse)
 def get_profile(current_user: User = Depends(get_current_user)):
     """View the currently logged-in user's profile."""
-    current_user.bedtime = current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else None
-    current_user.wake_time = current_user.target_wake_time.strftime("%H:%M") if current_user.target_wake_time else None
+    current_user.bedtime = (
+        current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else None
+    )
+    current_user.wake_time = (
+        current_user.target_wake_time.strftime("%H:%M") if current_user.target_wake_time else None
+    )
     return current_user
+
 
 @router.put("/users/profile", response_model=UserResponse)
 def update_profile(
     profile_data: UserProfileUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Update profile settings including bedtime and wake_time."""
     if profile_data.full_name is not None:
@@ -59,14 +68,18 @@ def update_profile(
     db.commit()
     db.refresh(current_user)
 
-    current_user.bedtime = current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else None
-    current_user.wake_time = current_user.target_wake_time.strftime("%H:%M") if current_user.target_wake_time else None
+    current_user.bedtime = (
+        current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else None
+    )
+    current_user.wake_time = (
+        current_user.target_wake_time.strftime("%H:%M") if current_user.target_wake_time else None
+    )
     return current_user
+
 
 @router.get("/coach/users", response_model=list[UserResponse])
 def get_assigned_users(
-    coach: User = Depends(require_wellness_coach),
-    db: Session = Depends(get_db)
+    coach: User = Depends(require_wellness_coach), db: Session = Depends(get_db)
 ):
     """Returns a list of users assigned to the wellness coach."""
     users = db.query(User).filter(User.role == UserRole.USER).all()

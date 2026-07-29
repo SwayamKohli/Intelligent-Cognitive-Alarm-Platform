@@ -1,0 +1,71 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: alarm_user
+          POSTGRES_PASSWORD: alarm_password
+          POSTGRES_DB: alarm_db
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+
+      mongo:
+        image: mongo:7
+        ports:
+          - 27018:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://alarm_app_user:user_password@cognitive-alarm-db.cp4ws0am6gqf.ap-south-1.rds.amazonaws.com:5432/cognitive_alarm_db
+      MONGO_URL: mongodb+srv://alarm_app_user:user_password@cognitive-alarm-cluster.vfxjrvz.mongodb.net/cognitive_alarm_logs?appName=cognitive-alarm-cluster
+      ADMIN_EMAIL: techlead@gmail.com
+      ADMIN_PASSWORD: TechLeadPassword
+      ADMIN_NAME: Tech Lead
+      
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: flake8 .
+
+      - name: Check formatting with black
+        run: black --check .
+
+      - name: Run Alembic migrations against test Postgres
+        run: alembic upgrade head
+
+      - name: Run pytest
+        run: pytest -v
