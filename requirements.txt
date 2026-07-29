@@ -47,7 +47,6 @@ typing_extensions==4.15.0
 uvicorn==0.49.0
 redis==5.0.1
 fastapi-cache2==0.2.1
-# jinja2thefuzz==0.22.1
 APScheduler==3.11.3
 flake8
 black
@@ -56,3 +55,4 @@ pytest-asyncio
 httpx
 thefuzz
 python-Levenshtein
+jinja2
