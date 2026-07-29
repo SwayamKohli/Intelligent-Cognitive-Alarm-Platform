@@ -2,6 +2,7 @@ import asyncio
 from app.database import client, challenge_logs_collection
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_connection():
     try:
@@ -12,15 +13,12 @@ async def test_connection():
         # Insert a throwaway test document
         result = await challenge_logs_collection.insert_one({"test": "hello"})
         print("Inserted test doc with id:", result.inserted_id)
-
         # Read it back to confirm reads work too
         doc = await challenge_logs_collection.find_one({"_id": result.inserted_id})
         print("Read back:", doc)
-
         # Clean up — remove the test doc so it doesn't clutter your real collection
         await challenge_logs_collection.delete_one({"_id": result.inserted_id})
         print("🧹 Test document cleaned up")
-
     except Exception as e:
         print("❌ Connection failed:", e)
 
