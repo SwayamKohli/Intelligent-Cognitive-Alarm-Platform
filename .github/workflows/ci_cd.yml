@@ -59,13 +59,17 @@ jobs:
           pip install -r requirements.txt
 
       - name: Lint with flake8
+        working-directory: intelligent-alarm-backend
         run: flake8 .
 
       - name: Check formatting with black
+        working-directory: intelligent-alarm-backend
         run: black --check .
 
       - name: Run Alembic migrations against test Postgres
+        working-directory: intelligent-alarm-backend
         run: alembic upgrade head
 
       - name: Run pytest
+        working-directory: intelligent-alarm-backend
         run: pytest -v
