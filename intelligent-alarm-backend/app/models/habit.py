@@ -40,7 +40,10 @@ class Habit(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
     user: Mapped["User"] = relationship(back_populates="habits")
@@ -73,6 +76,4 @@ class HabitLog(Base):
     habit: Mapped["Habit"] = relationship(back_populates="logs")
 
     def __repr__(self) -> str:
-        return (
-            f"<HabitLog habit_id={self.habit_id} date={self.log_date} completed={self.completed}>"
-        )
+        return f"<HabitLog habit_id={self.habit_id} date={self.log_date} completed={self.completed}>"
