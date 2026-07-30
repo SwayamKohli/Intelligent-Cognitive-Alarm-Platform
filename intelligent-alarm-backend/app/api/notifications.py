@@ -23,7 +23,9 @@ VALID_TOGGLE_SETTINGS = {
 
 def _get_or_create_user_preferences(user_id: str, db: Session) -> NotificationPreference:
     """Helper function to fetch user notification preferences or instantiate default row."""
-    pref = db.query(NotificationPreference).filter(NotificationPreference.user_id == user_id).first()
+    pref = (
+        db.query(NotificationPreference).filter(NotificationPreference.user_id == user_id).first()
+    )
     if not pref:
         pref = NotificationPreference(
             user_id=user_id,
@@ -41,8 +43,7 @@ def _get_or_create_user_preferences(user_id: str, db: Session) -> NotificationPr
 
 @router.get("/preferences", response_model=NotificationPreferenceResponse)
 def get_notification_preferences(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
     Returns the authenticated user's notification settings.
@@ -56,7 +57,7 @@ def get_notification_preferences(
 def update_notification_preferences(
     pref_in: NotificationPreferenceUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Updates the authenticated user's notification settings.
@@ -77,7 +78,7 @@ def update_notification_preferences(
 def toggle_notification_setting(
     toggle_in: NotificationToggleRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Enables or disables a specific notification setting for the authenticated user.
@@ -88,7 +89,7 @@ def toggle_notification_setting(
             detail=(
                 f"Invalid notification setting '{toggle_in.setting_name}'. "
                 f"Valid options are: {sorted(list(VALID_TOGGLE_SETTINGS))}"
-            )
+            ),
         )
 
     pref = _get_or_create_user_preferences(current_user.id, db)
