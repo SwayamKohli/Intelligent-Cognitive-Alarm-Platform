@@ -12,6 +12,7 @@ router = APIRouter(prefix="/users", tags=["Authentication"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
 
+
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """Dependency to validate the JWT token and return the logged-in user."""
     credentials_exception = HTTPException(
@@ -26,11 +27,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-        
+
     user = db.query(User).filter(User.email == email).first()
     if user is None:
         raise credentials_exception
     return user
+
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
@@ -49,6 +51,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
+
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):

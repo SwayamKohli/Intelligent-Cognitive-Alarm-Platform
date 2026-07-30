@@ -1,6 +1,7 @@
 import random
 import hashlib
 
+
 def get_local_random(user_id: str | None, total_attempts: int) -> random.Random:
     """
     Returns a deterministic Random generator instance seeded with the hash of the
@@ -8,11 +9,12 @@ def get_local_random(user_id: str | None, total_attempts: int) -> random.Random:
     """
     if user_id is None:
         return random
-    
+
     seed_str = f"{user_id}_{total_attempts}"
     seed_hash = hashlib.sha256(seed_str.encode()).hexdigest()
     seed_int = int(seed_hash, 16)
     return random.Random(seed_int)
+
 
 # --- Word Scramble Data ---
 SCRAMBLE_WORDS = {
@@ -23,16 +25,17 @@ SCRAMBLE_WORDS = {
     5: ["javascript", "complexity", "restaurant", "astronomy", "scientific", "government", "background", "motivation", "experience", "technology"]
 }
 
+
 def generate_word_scramble(difficulty: int, user_id: str | None = None, total_attempts: int = 0) -> dict:
     """
     Selects a word based on difficulty and shuffles its letters to form a word scramble.
     """
     difficulty = max(1, min(5, difficulty))
     r = get_local_random(user_id, total_attempts)
-    
+
     words = SCRAMBLE_WORDS.get(difficulty, SCRAMBLE_WORDS[1])
     original_word = r.choice(words)
-    
+
     # Scramble the word using the seeded random generator
     word_chars = list(original_word)
     for _ in range(10):
@@ -42,7 +45,7 @@ def generate_word_scramble(difficulty: int, user_id: str | None = None, total_at
             break
     else:
         scrambled_word = "".join(word_chars)
-        
+
     return {
         "client_payload": {
             "challenge_type": "word_scramble",
@@ -54,6 +57,7 @@ def generate_word_scramble(difficulty: int, user_id: str | None = None, total_at
         },
         "server_answer": original_word
     }
+
 
 # --- Riddle Data ---
 RIDDLES = {
@@ -84,16 +88,17 @@ RIDDLES = {
     ]
 }
 
+
 def generate_riddle(difficulty: int, user_id: str | None = None, total_attempts: int = 0) -> dict:
     """
     Selects a riddle based on difficulty level.
     """
     difficulty = max(1, min(5, difficulty))
     r = get_local_random(user_id, total_attempts)
-    
+
     riddle_list = RIDDLES.get(difficulty, RIDDLES[1])
     riddle = r.choice(riddle_list)
-    
+
     return {
         "client_payload": {
             "challenge_type": "riddle",
@@ -104,6 +109,7 @@ def generate_riddle(difficulty: int, user_id: str | None = None, total_attempts:
         },
         "server_answer": riddle["answer"]
     }
+
 
 # --- Quiz Data ---
 QUIZZES = {
@@ -134,19 +140,20 @@ QUIZZES = {
     ]
 }
 
+
 def generate_quiz(difficulty: int, user_id: str | None = None, total_attempts: int = 0) -> dict:
     """
     Selects a quiz question based on difficulty, and shuffles the options.
     """
     difficulty = max(1, min(5, difficulty))
     r = get_local_random(user_id, total_attempts)
-    
+
     quiz_list = QUIZZES.get(difficulty, QUIZZES[1])
     quiz = r.choice(quiz_list)
-    
+
     options = list(quiz["options"])
     r.shuffle(options)
-    
+
     return {
         "client_payload": {
             "challenge_type": "quiz",

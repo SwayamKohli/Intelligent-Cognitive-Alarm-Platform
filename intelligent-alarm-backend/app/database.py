@@ -1,7 +1,4 @@
 # DB connection setup
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
@@ -36,6 +33,7 @@ engine = create_engine(DATABASE_URL, echo=True, connect_args=connect_args)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -43,14 +41,17 @@ def get_db():
     finally:
         db.close()
 
+
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 # Global pool — created once on startup, reused across all requests
 redis_pool: aioredis.Redis | None = None
 
+
 async def get_redis() -> aioredis.Redis:
     """FastAPI dependency — inject redis into any route."""
     return redis_pool
+
 
 async def init_redis():
     """Call once in app startup event."""
@@ -69,10 +70,9 @@ async def init_redis():
         from fastapi_cache.backends.inmemory import InMemoryBackend
         FastAPICache.init(InMemoryBackend(), prefix="cogalarm-cache")
 
+
 async def close_redis():
     """Call once in app shutdown event."""
-    global redis_pool
     if redis_pool:
         await redis_pool.aclose()
         print("Redis disconnected")
-        

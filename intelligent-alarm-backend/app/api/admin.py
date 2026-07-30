@@ -10,6 +10,8 @@ from app.api.auth import get_current_user
 router = APIRouter(prefix="/admin", tags=["Admin Dashboard"])
 
 # ── Security Dependency ──────────────────────────────────────────────
+
+
 def require_admin(current_user: User = Depends(get_current_user)):
     """Blocks anyone who does not have the ADMIN role in the database."""
     # Assuming UserRole enum is accessible as a string or enum property
@@ -28,15 +30,15 @@ async def get_dashboard_metrics(
     db: Session = Depends(get_db)
 ):
     """
-    Aggregates global platform KPIs from Postgres (Users/Alarms) 
+    Aggregates global platform KPIs from Postgres (Users/Alarms)
     and MongoDB (Cognitive Engine Telemetry).
     """
     # 1. PostgreSQL Metrics (User & Alarm Stats)
     total_users = db.query(func.count(User.id)).scalar()
-    active_users = db.query(func.count(User.id)).filter(User.is_active == True).scalar()
-    
+    active_users = db.query(func.count(User.id)).filter(User.is_active).scalar()
+
     total_alarms = db.query(func.count(Alarm.id)).scalar()
-    
+
     # Calculate average snoozes globally
     avg_snoozes_query = db.query(func.avg(Alarm.active_snooze_count)).scalar()
     avg_snoozes = round(float(avg_snoozes_query), 2) if avg_snoozes_query else 0.0
@@ -51,15 +53,15 @@ async def get_dashboard_metrics(
                 "total_failures": {"$sum": "$failed_attempts"}
             }
         },
-        {"$sort": {"total_failures": -1}} # Sort highest failures first
+        {"$sort": {"total_failures": -1}}  # Sort highest failures first
     ]
-    
+
     engine_stats = []
     async for doc in challenge_logs_collection.aggregate(pipeline):
         attempts = doc.get("total_attempts", 0)
         failures = doc.get("total_failures", 0)
         failure_rate = round((failures / attempts) * 100, 2) if attempts > 0 else 0
-        
+
         engine_stats.append({
             "engine": doc["_id"],
             "attempts": attempts,

@@ -4,7 +4,7 @@ from app.database import challenge_logs_collection
 
 async def get_user_telemetry_last_7_days(user_id: str) -> dict:
 
-    now        = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
     seven_days_ago = now - timedelta(days=7)
 
     pipeline = [
@@ -26,10 +26,10 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
         {
             "$group": {
                 "_id": None,
-                "total_snoozes": { "$sum": { "$cond": [ {"$eq": ["$event_type", "snooze"]},1,0] } },
-                "total_challenges": { "$sum": { "$cond": [ {"$eq": ["$event_type", "challenge_attempt"]},1,0] } },
-                "total_failures": { "$sum": { "$cond": [ { "$and": [ {"$eq": ["$event_type", "challenge_attempt"]}, {"$in":  ["$outcome", ["failure", "skipped"]]} ] }, 1, 0 ] } },
-                "active_days": { "$addToSet": { "$dateToString": { "format": "%Y-%m-%d", "date": "$timestamp" } } }
+                "total_snoozes": {"$sum": {"$cond": [{"$eq": ["$event_type", "snooze"]}, 1, 0]}},
+                "total_challenges": {"$sum": {"$cond": [{"$eq": ["$event_type", "challenge_attempt"]}, 1, 0]}},
+                "total_failures": {"$sum": {"$cond": [{"$and": [{"$eq": ["$event_type", "challenge_attempt"]}, {"$in": ["$outcome", ["failure", "skipped"]]}]}, 1, 0]}},
+                "active_days": {"$addToSet": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}}}
             }
         },
 
@@ -37,17 +37,17 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
         # Shape the final output — calculate failure_rate here
         {
             "$project": {
-                "_id":             0,
-                "total_snoozes":   1,
+                "_id": 0,
+                "total_snoozes": 1,
                 "total_challenges": 1,
-                "total_failures":  1,
+                "total_failures": 1,
                 "days_active": {"$size": "$active_days"},
 
                 "failure_rate_percent": {
                     "$round": [
                         {
                             "$cond": {
-                                "if":   {"$eq": ["$total_challenges", 0]},
+                                "if": {"$eq": ["$total_challenges", 0]},
                                 "then": 0.0,
                                 "else": {
                                     "$multiply": [
@@ -61,7 +61,7 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
                                     ]
                                 }
                             }
-                        }, 2   
+                        }, 2
                     ]
                 }
             }
@@ -70,7 +70,7 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
 
     # ── Execute pipeline with exception fallback ─────────────
     try:
-        cursor  = challenge_logs_collection.aggregate(pipeline)
+        cursor = challenge_logs_collection.aggregate(pipeline)
         results = await cursor.to_list(length=1)
     except Exception as e:
         print(f"[WARNING] Telemetry service MongoDB call fallback: {e}")
@@ -80,19 +80,19 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
     # If user has NO logs yet (new user), return all zeros
     if not results:
         return {
-            "user_id":              user_id,
-            "period_days":          7,
-            "total_snoozes":        0,
-            "total_challenges":     0,
-            "total_failures":       0,
+            "user_id": user_id,
+            "period_days": 7,
+            "total_snoozes": 0,
+            "total_challenges": 0,
+            "total_failures": 0,
             "failure_rate_percent": 0.0,
-            "days_active":          0,
-            "generated_at":         now.isoformat()
+            "days_active": 0,
+            "generated_at": now.isoformat()
         }
 
     result = results[0]
-    result["user_id"]      = user_id
-    result["period_days"]  = 7
+    result["user_id"] = user_id
+    result["period_days"] = 7
     result["generated_at"] = now.isoformat()
 
     return result

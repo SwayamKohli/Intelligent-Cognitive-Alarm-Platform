@@ -45,11 +45,11 @@ class User(Base):
     )
     productivity_goal: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    target_bedtime:   Mapped[time | None] = mapped_column(Time(timezone=True), nullable=True)
+    target_bedtime: Mapped[time | None] = mapped_column(Time(timezone=True), nullable=True)
     target_wake_time: Mapped[time | None] = mapped_column(Time(timezone=True), nullable=True)
-    habit_score:      Mapped[float]           = mapped_column(Float,   default=0.0, nullable=False)
-    current_streak:   Mapped[int]             = mapped_column(Integer, default=0,   nullable=False)
-    
+    habit_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    current_streak: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
     # NEW: Global preference for challenge types (comma-separated, e.g., "math,riddle")
     preferred_challenges: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
@@ -71,7 +71,6 @@ class User(Base):
     notification_preference: Mapped["NotificationPreference | None"] = relationship(
         "NotificationPreference", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
-    
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email} role={self.role}>"

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import time
 
 from app.database import get_db
 from app.models.alarm import Alarm
@@ -15,20 +14,22 @@ from uuid import UUID
 router = APIRouter(prefix="/alarms", tags=["Alarms"])
 
 # ── POST /alarms/ ───────────────────────────────────────────────────
+
+
 @router.post("/", response_model=AlarmResponse, status_code=status.HTTP_201_CREATED)
 def create_alarm(
     alarm: AlarmCreate,
-    current_user: User = Depends(get_current_user), # Lock down the route
+    current_user: User = Depends(get_current_user),  # Lock down the route
     db: Session = Depends(get_db)                   # Connect to Postgres
 ):
     """Schedule a new alarm securely linked to the authenticated user."""
     # Convert Pydantic schema to dict and inject the secure user ID
     db_alarm = Alarm(**alarm.model_dump(), user_id=current_user.id)
-    
+
     db.add(db_alarm)
     db.commit()
     db.refresh(db_alarm)
-    
+
     return db_alarm
 
 
@@ -88,6 +89,8 @@ def snooze_alarm(
     )
 
 # ── DELETE /alarms/{alarm_id} ────────────────────────────────────────
+
+
 @router.delete("/{alarm_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_alarm(
     alarm_id: UUID,
@@ -110,6 +113,6 @@ def delete_alarm(
 
     db.delete(alarm)
     db.commit()
-    
+
     # 204 No Content responses should not return a body
     return None

@@ -2,7 +2,7 @@ import io
 from datetime import datetime, timezone, timedelta, time
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import pandas as pd
@@ -21,7 +21,7 @@ from reportlab.platypus import (
 
 from app.database import get_db, challenge_logs_collection
 from app.models.user import User
-from app.models.habit import Habit, HabitLog
+from app.models.habit import Habit
 from app.api.auth import get_current_user
 from app.services.telemetry_service import get_user_telemetry_last_7_days
 from app.core.analytics.scoring import calculate_habit_score

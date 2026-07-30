@@ -31,7 +31,7 @@ class Alarm(Base):
 
     # For recurring alarms — store active weekdays, e.g. "MON,TUE,WED"
     recurrence_days: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    
+
     # NEW: Alarm-specific challenge override (comma-separated, e.g., "math,logic")
     preferred_challenges: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

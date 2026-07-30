@@ -34,9 +34,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 def read_root():
     return {"message": "Intelligent Cognitive Alarm API is running."}
+
 
 app.include_router(alarms.router)
 app.include_router(auth.router)
@@ -51,14 +53,14 @@ app.include_router(notifications.router)
 @app.on_event("startup")
 async def startup():
     await init_redis()
-    
+
     # Schedule the V2 ML retraining script to execute automatically every midnight (00:00 UTC)
     scheduler.add_job(
-        run_retraining_loop, 
-        "cron", 
-        hour=0, 
-        minute=0, 
-        id="nightly_ml_retraining", 
+        run_retraining_loop,
+        "cron",
+        hour=0,
+        minute=0,
+        id="nightly_ml_retraining",
         replace_existing=True
     )
     scheduler.start()

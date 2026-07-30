@@ -11,6 +11,7 @@ from app.core.analytics.groq_recommendations import generate_ai_recommendations
 
 router = APIRouter(prefix="/analytics", tags=["Analytics & AI"])
 
+
 def analytics_key_builder(
     func,
     namespace: str = "",

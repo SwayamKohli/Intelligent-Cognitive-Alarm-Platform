@@ -9,6 +9,7 @@ from app.api.auth import get_current_user
 
 router = APIRouter(tags=["Users & Coach"])
 
+
 def require_wellness_coach(current_user: User = Depends(get_current_user)):
     """Strictly requires the WELLNESS_COACH role."""
     role_str = str(current_user.role.value if hasattr(current_user.role, 'value') else current_user.role).lower()
@@ -19,12 +20,14 @@ def require_wellness_coach(current_user: User = Depends(get_current_user)):
         )
     return current_user
 
+
 @router.get("/users/profile", response_model=UserResponse)
 def get_profile(current_user: User = Depends(get_current_user)):
     """View the currently logged-in user's profile."""
     current_user.bedtime = current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else None
     current_user.wake_time = current_user.target_wake_time.strftime("%H:%M") if current_user.target_wake_time else None
     return current_user
+
 
 @router.put("/users/profile", response_model=UserResponse)
 def update_profile(
@@ -62,6 +65,7 @@ def update_profile(
     current_user.bedtime = current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else None
     current_user.wake_time = current_user.target_wake_time.strftime("%H:%M") if current_user.target_wake_time else None
     return current_user
+
 
 @router.get("/coach/users", response_model=list[UserResponse])
 def get_assigned_users(
