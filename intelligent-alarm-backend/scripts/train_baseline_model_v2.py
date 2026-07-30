@@ -20,23 +20,15 @@ df = pd.read_csv(csv_path)
 feature_encoder = LabelEncoder()
 target_encoder = LabelEncoder()
 
-df["last_failed_type"] = feature_encoder.fit_transform(
-    df["last_failed_type"].astype(str)
-)
-df["target_challenge_type"] = target_encoder.fit_transform(
-    df["target_challenge_type"].astype(str)
-)
+df["last_failed_type"] = feature_encoder.fit_transform(df["last_failed_type"].astype(str))
+df["target_challenge_type"] = target_encoder.fit_transform(df["target_challenge_type"].astype(str))
 
 # Define Features (X) and Multi-Outputs (y)
-X = df[
-    ["snooze_count", "historical_success_rate", "avg_time_taken_ms", "last_failed_type"]
-]
+X = df[["snooze_count", "historical_success_rate", "avg_time_taken_ms", "last_failed_type"]]
 y = df[["target_challenge_type", "target_difficulty", "target_multi_step"]]
 
 # FIX: Corrected parameter name to test_size
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Multi-output Random Forest architecture
 forest = RandomForestClassifier(n_estimators=100, max_depth=12, random_state=42)

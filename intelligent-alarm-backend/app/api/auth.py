@@ -19,9 +19,7 @@ router = APIRouter(prefix="/users", tags=["Authentication"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
 
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
-):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """Dependency to validate the JWT token and return the logged-in user."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -42,9 +40,7 @@ def get_current_user(
     return user
 
 
-@router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
     """Register a new user."""
     existing_user = db.query(User).filter(User.email == user_in.email).first()
@@ -52,9 +48,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_pwd = get_password_hash(user_in.password)
-    new_user = User(
-        email=user_in.email, password_hash=hashed_pwd, full_name=user_in.full_name
-    )
+    new_user = User(email=user_in.email, password_hash=hashed_pwd, full_name=user_in.full_name)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -62,9 +56,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
-):
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Log in to get a JWT access token."""
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.password_hash):

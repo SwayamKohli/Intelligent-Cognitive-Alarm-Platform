@@ -26,9 +26,7 @@ def generate_dataset(num_samples=10000):
     avg_time_to_solve = np.random.uniform(5.0, 120.0, num_samples)
 
     # Failed attempts yesterday
-    failed_attempts = np.random.choice(
-        [0, 1, 2, 3], num_samples, p=[0.70, 0.20, 0.08, 0.02]
-    )
+    failed_attempts = np.random.choice([0, 1, 2, 3], num_samples, p=[0.70, 0.20, 0.08, 0.02])
 
     # 2. Define the Target Logic (The "Teacher" Rules)
     # Base difficulty relies on their overall habit score

@@ -31,9 +31,7 @@ class UserProfileUpdate(BaseModel):
     target_bedtime: Optional[str] = None
     target_wake_time: Optional[str] = None
 
-    @field_validator(
-        "bedtime", "wake_time", "target_bedtime", "target_wake_time", mode="before"
-    )
+    @field_validator("bedtime", "wake_time", "target_bedtime", "target_wake_time", mode="before")
     @classmethod
     def validate_time_format(cls, v: Optional[str]) -> Optional[str]:
         if v is None or v == "":
@@ -48,9 +46,7 @@ class UserProfileUpdate(BaseModel):
                 return str(v)
             except ValueError:
                 pass
-        raise ValueError(
-            "Time must be in HH:MM or HH:MM:SS format (e.g., '22:30' or '07:00:00')"
-        )
+        raise ValueError("Time must be in HH:MM or HH:MM:SS format (e.g., '22:30' or '07:00:00')")
 
 
 class UserResponse(BaseModel):
@@ -69,9 +65,7 @@ class UserResponse(BaseModel):
     habit_score: Optional[float] = 0.0
     current_streak: Optional[int] = 0
 
-    @field_validator(
-        "target_bedtime", "target_wake_time", "bedtime", "wake_time", mode="before"
-    )
+    @field_validator("target_bedtime", "target_wake_time", "bedtime", "wake_time", mode="before")
     @classmethod
     def format_time_field(cls, v: Any) -> Optional[str]:
         if v is None:

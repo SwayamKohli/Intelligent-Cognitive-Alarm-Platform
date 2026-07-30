@@ -76,4 +76,6 @@ class HabitLog(Base):
     habit: Mapped["Habit"] = relationship(back_populates="logs")
 
     def __repr__(self) -> str:
-        return f"<HabitLog habit_id={self.habit_id} date={self.log_date} completed={self.completed}>"
+        return (
+            f"<HabitLog habit_id={self.habit_id} date={self.log_date} completed={self.completed}>"
+        )

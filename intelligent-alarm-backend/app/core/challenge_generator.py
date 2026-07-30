@@ -69,9 +69,7 @@ def get_next_challenge(
 
     # Apply user preferences if they exist
     if allowed_types:
-        parsed_types = [
-            t.strip().lower() for t in allowed_types.split(",") if t.strip()
-        ]
+        parsed_types = [t.strip().lower() for t in allowed_types.split(",") if t.strip()]
         # Intersect requested types with actually available engines to prevent crashes
         filtered_engines = [t for t in available_engines if t in parsed_types]
         if filtered_engines:
@@ -90,9 +88,7 @@ def get_next_challenge(
     if challenge_type in semantic_types:
         try:
             # Attempt to generate infinite AI puzzle
-            challenge_data = generate_ai_challenge(
-                challenge_type, difficulty, avoid_topics=[]
-            )
+            challenge_data = generate_ai_challenge(challenge_type, difficulty, avoid_topics=[])
         except Exception as e:
             print(
                 f"[WARNING] Groq API failed for {challenge_type}. Falling back to static engine. Error: {e}"

@@ -28,17 +28,13 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
 
-    email: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False, index=True
-    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     oauth_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
     oauth_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
-    role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole), default=UserRole.USER, nullable=False
-    )
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     timezone: Mapped[str] = mapped_column(String(50), default="UTC", nullable=False)
@@ -47,12 +43,8 @@ class User(Base):
     )
     productivity_goal: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    target_bedtime: Mapped[time | None] = mapped_column(
-        Time(timezone=True), nullable=True
-    )
-    target_wake_time: Mapped[time | None] = mapped_column(
-        Time(timezone=True), nullable=True
-    )
+    target_bedtime: Mapped[time | None] = mapped_column(Time(timezone=True), nullable=True)
+    target_wake_time: Mapped[time | None] = mapped_column(Time(timezone=True), nullable=True)
     habit_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     current_streak: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
@@ -68,9 +60,7 @@ class User(Base):
         onupdate=func.now(),
         nullable=False,
     )
-    last_login_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships — one user, MANY alarms and MANY habits
     alarms: Mapped[list["Alarm"]] = relationship(

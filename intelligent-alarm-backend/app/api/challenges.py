@@ -44,9 +44,7 @@ def normalize_text(text: str) -> str:
 @router.get("/next")
 async def get_next_challenge_endpoint(
     alarm_id: UUID = Query(..., description="The alarm that triggered this challenge"),
-    challenge_type: str = Query(
-        "random", description="Specific engine to trigger, or 'random'"
-    ),
+    challenge_type: str = Query("random", description="Specific engine to trigger, or 'random'"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -77,9 +75,7 @@ async def get_next_challenge_endpoint(
 
     # 2. Decide the Challenge Type
     final_challenge_type = (
-        challenge_type
-        if challenge_type != "random"
-        else ml_predictions["challenge_type"]
+        challenge_type if challenge_type != "random" else ml_predictions["challenge_type"]
     )
 
     key = str(alarm_id)
@@ -111,9 +107,7 @@ async def get_next_challenge_endpoint(
 
     # Stash the new correct answer and type for the verify endpoint
     _pending_answers[key]["answer"] = challenge_data["server_answer"]
-    _pending_answers[key]["challenge_type"] = challenge_data["client_payload"][
-        "challenge_type"
-    ]
+    _pending_answers[key]["challenge_type"] = challenge_data["client_payload"]["challenge_type"]
     _pending_answers[key]["difficulty"] = difficulty
 
     # Inject streak metadata into the client payload for the UI Progress Bar

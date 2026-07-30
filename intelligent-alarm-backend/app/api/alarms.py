@@ -33,9 +33,7 @@ def create_alarm(
 
 # ── GET /alarms/ ────────────────────────────────────────────────────
 @router.get("/", response_model=List[AlarmResponse])
-def get_user_alarms(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
+def get_user_alarms(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Retrieve all alarms belonging only to the logged-in user."""
     return db.query(Alarm).filter(Alarm.user_id == current_user.id).all()
 
@@ -100,11 +98,7 @@ def delete_alarm(
     """
     Deletes a specific alarm. Ensures the alarm belongs to the requesting user.
     """
-    alarm = (
-        db.query(Alarm)
-        .filter(Alarm.id == alarm_id, Alarm.user_id == current_user.id)
-        .first()
-    )
+    alarm = db.query(Alarm).filter(Alarm.id == alarm_id, Alarm.user_id == current_user.id).first()
 
     if not alarm:
         raise HTTPException(

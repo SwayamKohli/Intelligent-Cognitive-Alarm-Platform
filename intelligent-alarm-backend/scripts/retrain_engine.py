@@ -86,27 +86,17 @@ async def run_retraining_loop():
                 "last_failed_type_encoded",
             ]
         ]
-        y = df[
-            ["target_challenge_type_encoded", "target_difficulty", "target_multi_step"]
-        ]
+        y = df[["target_challenge_type_encoded", "target_difficulty", "target_multi_step"]]
 
-        base_rf = RandomForestClassifier(
-            n_estimators=100, max_depth=12, random_state=42
-        )
+        base_rf = RandomForestClassifier(n_estimators=100, max_depth=12, random_state=42)
         multi_target_model = MultiOutputClassifier(base_rf, n_jobs=-1)
 
         multi_target_model.fit(X, y)
 
         # 6. Save Updated Model & Encoders
-        model_path = os.path.join(
-            os.path.dirname(__file__), "../models/adaptive_ml_model.pkl"
-        )
-        encoder_path_1 = os.path.join(
-            os.path.dirname(__file__), "../models/le_failed_type.pkl"
-        )
-        encoder_path_2 = os.path.join(
-            os.path.dirname(__file__), "../models/le_target_type.pkl"
-        )
+        model_path = os.path.join(os.path.dirname(__file__), "../models/adaptive_ml_model.pkl")
+        encoder_path_1 = os.path.join(os.path.dirname(__file__), "../models/le_failed_type.pkl")
+        encoder_path_2 = os.path.join(os.path.dirname(__file__), "../models/le_target_type.pkl")
 
         # Ensure directory exists
         os.makedirs(os.path.dirname(model_path), exist_ok=True)

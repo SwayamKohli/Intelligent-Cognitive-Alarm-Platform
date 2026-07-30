@@ -22,12 +22,8 @@ def run_demonstration():
     # 1. Show that the generator is deterministic for the same user_id and total_attempts
     print("\n1. Verifying Determinism (Same inputs produce identical problems):")
     for attempt in [0, 1, 2]:
-        p1 = generate_math_problem(
-            difficulty=2, user_id=user_id, total_attempts=attempt
-        )
-        p2 = generate_math_problem(
-            difficulty=2, user_id=user_id, total_attempts=attempt
-        )
+        p1 = generate_math_problem(difficulty=2, user_id=user_id, total_attempts=attempt)
+        p2 = generate_math_problem(difficulty=2, user_id=user_id, total_attempts=attempt)
 
         problem_str1 = p1["client_payload"]["content"]["prompt"]
         answer_str1 = p1["server_answer"]
@@ -57,9 +53,7 @@ def run_demonstration():
     print("\n3. Testing math problems across all difficulty levels (1-5):")
     for diff in range(1, 6):
         p = generate_math_problem(difficulty=diff, user_id=user_id, total_attempts=0)
-        print(
-            f"  Level {diff}: {p['client_payload']['content']['prompt']} = {p['server_answer']}"
-        )
+        print(f"  Level {diff}: {p['client_payload']['content']['prompt']} = {p['server_answer']}")
     print("=" * 60)
 
 

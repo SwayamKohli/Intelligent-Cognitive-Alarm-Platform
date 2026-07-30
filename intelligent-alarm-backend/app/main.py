@@ -74,9 +74,7 @@ async def startup():
         replace_existing=True,
     )
     scheduler.start()
-    logger.info(
-        "Nightly V2 ML Retraining Scheduler successfully started (Cron: 00:00 UTC)."
-    )
+    logger.info("Nightly V2 ML Retraining Scheduler successfully started (Cron: 00:00 UTC).")
 
 
 @app.on_event("shutdown")

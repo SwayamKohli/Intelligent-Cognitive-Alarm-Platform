@@ -3,9 +3,7 @@ import joblib
 import pandas as pd
 
 # Load the model artifact (which now contains the model + encoders)
-MODEL_PATH = os.path.join(
-    os.path.dirname(__file__), "../../models/adaptive_model_v2.pkl"
-)
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "../../models/adaptive_model_v2.pkl")
 
 try:
     model_artifact = joblib.load(MODEL_PATH)
@@ -16,9 +14,7 @@ except Exception as e:
     model = None
     feature_encoder = None
     target_encoder = None
-    print(
-        f"Warning: V2 ML model artifact not found or invalid. Using fallback logic. ({e})"
-    )
+    print(f"Warning: V2 ML model artifact not found or invalid. Using fallback logic. ({e})")
 
 
 def predict_next_challenge(

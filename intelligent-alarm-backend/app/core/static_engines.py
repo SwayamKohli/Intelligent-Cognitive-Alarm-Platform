@@ -171,9 +171,7 @@ RIDDLES = {
 }
 
 
-def generate_riddle(
-    difficulty: int, user_id: str | None = None, total_attempts: int = 0
-) -> dict:
+def generate_riddle(difficulty: int, user_id: str | None = None, total_attempts: int = 0) -> dict:
     """
     Selects a riddle based on difficulty level.
     """
@@ -303,9 +301,7 @@ QUIZZES = {
 }
 
 
-def generate_quiz(
-    difficulty: int, user_id: str | None = None, total_attempts: int = 0
-) -> dict:
+def generate_quiz(difficulty: int, user_id: str | None = None, total_attempts: int = 0) -> dict:
     """
     Selects a quiz question based on difficulty, and shuffles the options.
     """

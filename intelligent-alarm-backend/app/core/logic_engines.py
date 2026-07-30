@@ -94,9 +94,7 @@ def generate_logic_puzzle(difficulty: int) -> dict:
         ("faster than", "slower than", "fastest", "slowest"),
     ]
 
-    comp_greater, comp_lesser, superlative_max, superlative_min = random.choice(
-        comparisons
-    )
+    comp_greater, comp_lesser, superlative_max, superlative_min = random.choice(comparisons)
     num_entities = 3 if difficulty <= 2 else (4 if difficulty <= 4 else 5)
     entities = random.sample(names, num_entities)
 

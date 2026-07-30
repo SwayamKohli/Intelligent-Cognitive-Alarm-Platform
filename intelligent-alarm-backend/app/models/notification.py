@@ -20,21 +20,11 @@ class NotificationPreference(Base):
         index=True,
     )
 
-    bedtime_warning_enabled: Mapped[bool] = mapped_column(
-        Boolean, default=True, nullable=False
-    )
-    bedtime_warning_minutes: Mapped[int] = mapped_column(
-        Integer, default=30, nullable=False
-    )
-    morning_streak_alert: Mapped[bool] = mapped_column(
-        Boolean, default=True, nullable=False
-    )
-    challenge_reminders: Mapped[bool] = mapped_column(
-        Boolean, default=True, nullable=False
-    )
-    weekly_sleep_report: Mapped[bool] = mapped_column(
-        Boolean, default=True, nullable=False
-    )
+    bedtime_warning_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    bedtime_warning_minutes: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    morning_streak_alert: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    challenge_reminders: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    weekly_sleep_report: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

@@ -49,9 +49,7 @@ async def get_habit_score(
     snooze_reduction = round(max(0.0, 100.0 - (total_snoozes * 10.0)), 2)
 
     sleep_adherence = (
-        100.0
-        if (current_user.target_bedtime and current_user.target_wake_time)
-        else 80.0
+        100.0 if (current_user.target_bedtime and current_user.target_wake_time) else 80.0
     )
 
     score = calculate_habit_score(
