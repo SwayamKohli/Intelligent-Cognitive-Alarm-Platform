@@ -21,10 +21,14 @@ VALID_TOGGLE_SETTINGS = {
 }
 
 
-def _get_or_create_user_preferences(user_id: str, db: Session) -> NotificationPreference:
+def _get_or_create_user_preferences(
+    user_id: str, db: Session
+) -> NotificationPreference:
     """Helper function to fetch user notification preferences or instantiate default row."""
     pref = (
-        db.query(NotificationPreference).filter(NotificationPreference.user_id == user_id).first()
+        db.query(NotificationPreference)
+        .filter(NotificationPreference.user_id == user_id)
+        .first()
     )
     if not pref:
         pref = NotificationPreference(

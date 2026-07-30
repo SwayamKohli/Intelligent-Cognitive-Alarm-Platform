@@ -6,12 +6,22 @@ import os
 print(" Booting V2 Synthetic Data Generator...")
 
 NUM_SAMPLES = 10000
-CHALLENGE_TYPES = ["math", "memory", "pattern", "logic", "word_scramble", "riddle", "quiz"]
+CHALLENGE_TYPES = [
+    "math",
+    "memory",
+    "pattern",
+    "logic",
+    "word_scramble",
+    "riddle",
+    "quiz",
+]
 
 data = []
 
 for _ in range(NUM_SAMPLES):
-    persona = random.choice(["autopilot_genius", "groggy_struggler", "panicked_waker", "standard"])
+    persona = random.choice(
+        ["autopilot_genius", "groggy_struggler", "panicked_waker", "standard"]
+    )
 
     if persona == "autopilot_genius":
         snooze_count = random.randint(3, 6)
@@ -76,7 +86,9 @@ os.makedirs("../data", exist_ok=True)
 csv_path = "../data/synthetic_v2_logs.csv"
 df.to_csv(csv_path, index=False)
 
-print(f" Successfully generated {NUM_SAMPLES} rows of synthetic multi-dimensional data.")
+print(
+    f" Successfully generated {NUM_SAMPLES} rows of synthetic multi-dimensional data."
+)
 print(f" Saved to: {csv_path}")
 print("\nSample Data Preview:")
 print(df.head())

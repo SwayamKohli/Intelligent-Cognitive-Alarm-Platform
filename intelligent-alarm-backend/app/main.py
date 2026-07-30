@@ -8,7 +8,16 @@ from app.models.base import Base
 
 # Import all models so SQLAlchemy knows they exist before creating tables
 from app.models import user, alarm, habit, notification
-from app.api import alarms, auth, challenges, admin, users, analytics, reports, notifications
+from app.api import (
+    alarms,
+    auth,
+    challenges,
+    admin,
+    users,
+    analytics,
+    reports,
+    notifications,
+)
 from scripts.retrain_engine import run_retraining_loop
 
 # Configure basic logger for startup notifications
@@ -65,7 +74,9 @@ async def startup():
         replace_existing=True,
     )
     scheduler.start()
-    logger.info("Nightly V2 ML Retraining Scheduler successfully started (Cron: 00:00 UTC).")
+    logger.info(
+        "Nightly V2 ML Retraining Scheduler successfully started (Cron: 00:00 UTC)."
+    )
 
 
 @app.on_event("shutdown")

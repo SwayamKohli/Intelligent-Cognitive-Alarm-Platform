@@ -9,16 +9,25 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
 
     pipeline = [
         # ── Stage 1: $match ───────────────────────────────────
-        {"$match": {"user_id": user_id, "timestamp": {"$gte": seven_days_ago, "$lte": now}}},
+        {
+            "$match": {
+                "user_id": user_id,
+                "timestamp": {"$gte": seven_days_ago, "$lte": now},
+            }
+        },
         # ── Stage 2: $group ───────────────────────────────────
         # Collapse all matched documents into one summary row.
         # _id: null means "group everything together" (one bucket).
         {
             "$group": {
                 "_id": None,
-                "total_snoozes": {"$sum": {"$cond": [{"$eq": ["$event_type", "snooze"]}, 1, 0]}},
+                "total_snoozes": {
+                    "$sum": {"$cond": [{"$eq": ["$event_type", "snooze"]}, 1, 0]}
+                },
                 "total_challenges": {
-                    "$sum": {"$cond": [{"$eq": ["$event_type", "challenge_attempt"]}, 1, 0]}
+                    "$sum": {
+                        "$cond": [{"$eq": ["$event_type", "challenge_attempt"]}, 1, 0]
+                    }
                 },
                 "total_failures": {
                     "$sum": {
@@ -35,7 +44,9 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
                     }
                 },
                 "active_days": {
-                    "$addToSet": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}}
+                    "$addToSet": {
+                        "$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}
+                    }
                 },
             }
         },
@@ -56,7 +67,12 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
                                 "then": 0.0,
                                 "else": {
                                     "$multiply": [
-                                        {"$divide": ["$total_failures", "$total_challenges"]},
+                                        {
+                                            "$divide": [
+                                                "$total_failures",
+                                                "$total_challenges",
+                                            ]
+                                        },
                                         100,
                                     ]
                                 },

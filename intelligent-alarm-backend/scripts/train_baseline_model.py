@@ -21,7 +21,9 @@ def train_model():
     y = df["target_difficulty"]
 
     # Split into 80% training and 20% testing
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
     print("Training Random Forest Classifier...")
     model = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)

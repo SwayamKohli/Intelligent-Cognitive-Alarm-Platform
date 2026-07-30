@@ -20,7 +20,9 @@ def run_llm_test():
 
         print("\n2. Testing Word Scramble Generator (Difficulty 3)...")
         scramble = generate_ai_challenge(
-            challenge_type="word_scramble", difficulty=3, avoid_topics=["apple", "house"]
+            challenge_type="word_scramble",
+            difficulty=3,
+            avoid_topics=["apple", "house"],
         )
         print(json.dumps(scramble, indent=2))
 

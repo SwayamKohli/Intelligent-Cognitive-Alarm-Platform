@@ -10,7 +10,9 @@ from fastapi_cache.backends.redis import RedisBackend
 
 load_dotenv()
 
-MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongo_user:mongo_password@localhost:27018")
+MONGO_URL = os.getenv(
+    "MONGO_URL", "mongodb://mongo_user:mongo_password@localhost:27018"
+)
 
 client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=2000)
 mongo_db = client["cognitive_alarm_logs"]

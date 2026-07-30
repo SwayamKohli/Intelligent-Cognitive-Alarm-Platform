@@ -72,7 +72,9 @@ def generate_ai_challenge(
         payload["client_payload"]["content"]["prompt"] = raw_json["prompt"]
     elif challenge_type == "word_scramble":
         payload["client_payload"]["content"]["prompt"] = "Unscramble this word:"
-        payload["client_payload"]["content"]["scrambled_word"] = raw_json["scrambled_word"].upper()
+        payload["client_payload"]["content"]["scrambled_word"] = raw_json[
+            "scrambled_word"
+        ].upper()
     elif challenge_type in ["logic", "quiz"]:
         payload["client_payload"]["content"]["prompt"] = raw_json["prompt"]
         payload["client_payload"]["content"]["options"] = raw_json["options"]

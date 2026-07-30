@@ -32,7 +32,9 @@ def seed_admin():
     try:
         existing = db.query(User).filter(User.email == admin_email).first()
         if existing:
-            print(f"Admin user '{admin_email}' already exists — skipping (no changes made).")
+            print(
+                f"Admin user '{admin_email}' already exists — skipping (no changes made)."
+            )
             return
 
         admin_user = User(

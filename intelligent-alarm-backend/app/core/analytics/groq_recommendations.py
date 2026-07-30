@@ -37,7 +37,9 @@ async def generate_ai_recommendations(
     )
 
     if not client:
-        print("[WARNING] GROQ_API_KEY not configured. Returning fallback static recommendations.")
+        print(
+            "[WARNING] GROQ_API_KEY not configured. Returning fallback static recommendations."
+        )
         return {
             "sleep": "Try going to bed 30 minutes earlier to improve your energy.",
             "wake_up": "Place your phone across the room to reduce snoozing.",

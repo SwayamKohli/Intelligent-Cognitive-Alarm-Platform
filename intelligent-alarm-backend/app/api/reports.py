@@ -30,7 +30,9 @@ from app.core.analytics.groq_recommendations import generate_ai_recommendations
 router = APIRouter(prefix="/reports", tags=["Reports & Exports"])
 
 
-def _calculate_sleep_duration(bedtime: Optional[time], wake_time: Optional[time]) -> str:
+def _calculate_sleep_duration(
+    bedtime: Optional[time], wake_time: Optional[time]
+) -> str:
     """Calculates sleep duration in hours and minutes handling overnight wrap-around."""
     if not bedtime or not wake_time:
         return "Not configured"
@@ -68,7 +70,9 @@ async def export_pdf_report(
     total_snoozes = telemetry.get("total_snoozes", 0)
     snooze_reduction = round(max(0.0, 100.0 - (total_snoozes * 10.0)), 2)
     sleep_adherence = (
-        100.0 if (current_user.target_bedtime and current_user.target_wake_time) else 80.0
+        100.0
+        if (current_user.target_bedtime and current_user.target_wake_time)
+        else 80.0
     )
 
     habit_score = calculate_habit_score(
@@ -89,7 +93,9 @@ async def export_pdf_report(
         current_user.target_bedtime, current_user.target_wake_time
     )
     bedtime_str = (
-        current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else "Not set"
+        current_user.target_bedtime.strftime("%H:%M")
+        if current_user.target_bedtime
+        else "Not set"
     )
     wake_time_str = (
         current_user.target_wake_time.strftime("%H:%M")
@@ -100,7 +106,12 @@ async def export_pdf_report(
     # 3. Build PDF with ReportLab
     pdf_buffer = io.BytesIO()
     doc = SimpleDocTemplate(
-        pdf_buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36
+        pdf_buffer,
+        pagesize=letter,
+        rightMargin=36,
+        leftMargin=36,
+        topMargin=36,
+        bottomMargin=36,
     )
 
     styles = getSampleStyleSheet()
@@ -163,7 +174,9 @@ async def export_pdf_report(
 
     # Title Banner
     story.append(
-        Paragraph("Intelligent Cognitive Alarm — Sleep & Habit Summary Report", title_style)
+        Paragraph(
+            "Intelligent Cognitive Alarm — Sleep & Habit Summary Report", title_style
+        )
     )
     generated_at_str = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
     story.append(
@@ -173,7 +186,9 @@ async def export_pdf_report(
         )
     )
     story.append(
-        HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#2563EB"), spaceAfter=15)
+        HRFlowable(
+            width="100%", thickness=1.5, color=colors.HexColor("#2563EB"), spaceAfter=15
+        )
     )
 
     # Section 1: User Profile & Sleep Schedule
@@ -232,7 +247,8 @@ async def export_pdf_report(
             Paragraph("Overall Habit Score", cell_bold),
             Paragraph(f"<b>{habit_score} / 100</b>", cell_normal),
             Paragraph(
-                "Weighted score across adherence, consistency, and challenge success.", cell_normal
+                "Weighted score across adherence, consistency, and challenge success.",
+                cell_normal,
             ),
         ],
         [
@@ -313,7 +329,10 @@ async def export_pdf_report(
     # Section 4: AI Recommendations Summary
     story.append(Paragraph("4. Personalized Recommendation Summary", section_title))
     rec_table_data = [
-        [Paragraph("Category", cell_bold), Paragraph("Actionable Recommendation", cell_bold)],
+        [
+            Paragraph("Category", cell_bold),
+            Paragraph("Actionable Recommendation", cell_bold),
+        ],
         [
             Paragraph("Sleep Optimization", rec_title),
             Paragraph(recommendations.get("sleep", "N/A"), cell_normal),
@@ -378,7 +397,9 @@ async def export_excel_report(
     total_snoozes = telemetry.get("total_snoozes", 0)
     snooze_reduction = round(max(0.0, 100.0 - (total_snoozes * 10.0)), 2)
     sleep_adherence = (
-        100.0 if (current_user.target_bedtime and current_user.target_wake_time) else 80.0
+        100.0
+        if (current_user.target_bedtime and current_user.target_wake_time)
+        else 80.0
     )
 
     habit_score = calculate_habit_score(
@@ -392,7 +413,9 @@ async def export_excel_report(
         current_user.target_bedtime, current_user.target_wake_time
     )
     bedtime_str = (
-        current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else "Not set"
+        current_user.target_bedtime.strftime("%H:%M")
+        if current_user.target_bedtime
+        else "Not set"
     )
     wake_time_str = (
         current_user.target_wake_time.strftime("%H:%M")
@@ -406,7 +429,10 @@ async def export_excel_report(
         {"Attribute": "Full Name", "Value": current_user.full_name or "N/A"},
         {"Attribute": "Email", "Value": current_user.email},
         {"Attribute": "Timezone", "Value": current_user.timezone or "UTC"},
-        {"Attribute": "Productivity Goal", "Value": current_user.productivity_goal or "N/A"},
+        {
+            "Attribute": "Productivity Goal",
+            "Value": current_user.productivity_goal or "N/A",
+        },
         {"Attribute": "Current Streak (Days)", "Value": current_user.current_streak},
         {"Attribute": "Target Bedtime", "Value": bedtime_str},
         {"Attribute": "Target Wake Time", "Value": wake_time_str},
@@ -442,7 +468,11 @@ async def export_excel_report(
                     "Difficulty": doc.get("difficulty_level", "N/A"),
                     "Time Taken (s)": doc.get(
                         "time_to_solve_seconds",
-                        doc.get("time_taken_ms", 0) / 1000.0 if doc.get("time_taken_ms") else 0,
+                        (
+                            doc.get("time_taken_ms", 0) / 1000.0
+                            if doc.get("time_taken_ms")
+                            else 0
+                        ),
                     ),
                     "Failed Attempts": doc.get("failed_attempts", 0),
                     "Timeout Failed": doc.get("timeout_failed", False),
@@ -485,7 +515,9 @@ async def export_excel_report(
                 "Longest Streak": habit.longest_streak,
                 "Target Streak Days": habit.target_streak_days or "N/A",
                 "Habit Score": habit.habit_score,
-                "Created At": habit.created_at.isoformat() if habit.created_at else "N/A",
+                "Created At": (
+                    habit.created_at.isoformat() if habit.created_at else "N/A"
+                ),
             }
         )
 
@@ -496,7 +528,9 @@ async def export_excel_report(
                     "Log Date": h_log.log_date.isoformat() if h_log.log_date else "N/A",
                     "Completed": h_log.completed,
                     "Snooze Count": h_log.snooze_count,
-                    "Logged At": h_log.created_at.isoformat() if h_log.created_at else "N/A",
+                    "Logged At": (
+                        h_log.created_at.isoformat() if h_log.created_at else "N/A"
+                    ),
                 }
             )
 

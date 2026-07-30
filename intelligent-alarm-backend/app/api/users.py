@@ -13,7 +13,9 @@ router = APIRouter(tags=["Users & Coach"])
 def require_wellness_coach(current_user: User = Depends(get_current_user)):
     """Strictly requires the WELLNESS_COACH role."""
     role_str = str(
-        current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+        current_user.role.value
+        if hasattr(current_user.role, "value")
+        else current_user.role
     ).lower()
     if current_user.role != UserRole.WELLNESS_COACH and role_str != "wellness_coach":
         raise HTTPException(
@@ -27,10 +29,14 @@ def require_wellness_coach(current_user: User = Depends(get_current_user)):
 def get_profile(current_user: User = Depends(get_current_user)):
     """View the currently logged-in user's profile."""
     current_user.bedtime = (
-        current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else None
+        current_user.target_bedtime.strftime("%H:%M")
+        if current_user.target_bedtime
+        else None
     )
     current_user.wake_time = (
-        current_user.target_wake_time.strftime("%H:%M") if current_user.target_wake_time else None
+        current_user.target_wake_time.strftime("%H:%M")
+        if current_user.target_wake_time
+        else None
     )
     return current_user
 
@@ -69,10 +75,14 @@ def update_profile(
     db.refresh(current_user)
 
     current_user.bedtime = (
-        current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else None
+        current_user.target_bedtime.strftime("%H:%M")
+        if current_user.target_bedtime
+        else None
     )
     current_user.wake_time = (
-        current_user.target_wake_time.strftime("%H:%M") if current_user.target_wake_time else None
+        current_user.target_wake_time.strftime("%H:%M")
+        if current_user.target_wake_time
+        else None
     )
     return current_user
 
@@ -84,6 +94,10 @@ def get_assigned_users(
     """Returns a list of users assigned to the wellness coach."""
     users = db.query(User).filter(User.role == UserRole.USER).all()
     for user in users:
-        user.bedtime = user.target_bedtime.strftime("%H:%M") if user.target_bedtime else None
-        user.wake_time = user.target_wake_time.strftime("%H:%M") if user.target_wake_time else None
+        user.bedtime = (
+            user.target_bedtime.strftime("%H:%M") if user.target_bedtime else None
+        )
+        user.wake_time = (
+            user.target_wake_time.strftime("%H:%M") if user.target_wake_time else None
+        )
     return users
