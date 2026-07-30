@@ -9,7 +9,12 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
 
     pipeline = [
         # ── Stage 1: $match ───────────────────────────────────
-        {"$match": {"user_id": user_id, "timestamp": {"$gte": seven_days_ago, "$lte": now}}},
+        {
+            "$match": {
+                "user_id": user_id,
+                "timestamp": {"$gte": seven_days_ago, "$lte": now},
+            }
+        },
         # ── Stage 2: $group ───────────────────────────────────
         # Collapse all matched documents into one summary row.
         # _id: null means "group everything together" (one bucket).
@@ -56,7 +61,12 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
                                 "then": 0.0,
                                 "else": {
                                     "$multiply": [
-                                        {"$divide": ["$total_failures", "$total_challenges"]},
+                                        {
+                                            "$divide": [
+                                                "$total_failures",
+                                                "$total_challenges",
+                                            ]
+                                        },
                                         100,
                                     ]
                                 },

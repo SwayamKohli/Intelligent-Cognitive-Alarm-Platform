@@ -10,7 +10,13 @@ def generate_memory_sequence(
     difficulty = max(1, min(5, difficulty))
     r = get_local_random(user_id, total_attempts)
 
-    difficulty_matrix = {1: (3, 4000), 2: (4, 3500), 3: (5, 3000), 4: (6, 2500), 5: (7, 2000)}
+    difficulty_matrix = {
+        1: (3, 4000),
+        2: (4, 3500),
+        3: (5, 3000),
+        4: (6, 2500),
+        5: (7, 2000),
+    }
 
     seq_length, display_time = difficulty_matrix[difficulty]
     pool = string.digits if difficulty <= 2 else string.digits + string.ascii_uppercase

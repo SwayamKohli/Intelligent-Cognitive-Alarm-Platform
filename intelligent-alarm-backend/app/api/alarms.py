@@ -91,7 +91,9 @@ def snooze_alarm(
 # ── DELETE /alarms/{alarm_id} ────────────────────────────────────────
 @router.delete("/{alarm_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_alarm(
-    alarm_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    alarm_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Deletes a specific alarm. Ensures the alarm belongs to the requesting user.

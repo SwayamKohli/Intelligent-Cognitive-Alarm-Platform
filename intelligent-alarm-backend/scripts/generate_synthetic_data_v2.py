@@ -6,7 +6,15 @@ import os
 print(" Booting V2 Synthetic Data Generator...")
 
 NUM_SAMPLES = 10000
-CHALLENGE_TYPES = ["math", "memory", "pattern", "logic", "word_scramble", "riddle", "quiz"]
+CHALLENGE_TYPES = [
+    "math",
+    "memory",
+    "pattern",
+    "logic",
+    "word_scramble",
+    "riddle",
+    "quiz",
+]
 
 data = []
 

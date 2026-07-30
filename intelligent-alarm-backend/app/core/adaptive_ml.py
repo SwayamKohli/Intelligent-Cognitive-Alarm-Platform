@@ -44,7 +44,14 @@ def predict_next_challenge(
 
     # Format the input exactly as the V2 model was trained
     input_features = pd.DataFrame(
-        [[snooze_count, historical_success_rate, avg_time_taken_ms, encoded_last_failed]],
+        [
+            [
+                snooze_count,
+                historical_success_rate,
+                avg_time_taken_ms,
+                encoded_last_failed,
+            ]
+        ],
         columns=[
             "snooze_count",
             "historical_success_rate",

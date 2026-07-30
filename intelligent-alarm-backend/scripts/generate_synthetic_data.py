@@ -31,7 +31,9 @@ def generate_dataset(num_samples=10000):
     # 2. Define the Target Logic (The "Teacher" Rules)
     # Base difficulty relies on their overall habit score
     base_diff = np.where(
-        habit_score > 80, 4, np.where(habit_score > 50, 3, np.where(habit_score > 30, 2, 1))
+        habit_score > 80,
+        4,
+        np.where(habit_score > 50, 3, np.where(habit_score > 30, 2, 1)),
     )
 
     # Snoozing forces the difficulty up (Anti-snooze protocol)

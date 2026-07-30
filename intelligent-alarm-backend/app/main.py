@@ -7,8 +7,17 @@ from app.database import engine, init_redis, close_redis
 from app.models.base import Base
 
 # Import all models so SQLAlchemy knows they exist before creating tables
-from app.models import user, alarm, habit
-from app.api import alarms, auth, challenges, admin, users, analytics
+from app.models import user, alarm, habit, notification
+from app.api import (
+    alarms,
+    auth,
+    challenges,
+    admin,
+    users,
+    analytics,
+    reports,
+    notifications,
+)
 from scripts.retrain_engine import run_retraining_loop
 
 # Configure basic logger for startup notifications
@@ -47,6 +56,8 @@ app.include_router(users.router)
 app.include_router(challenges.router)
 app.include_router(admin.router)
 app.include_router(analytics.router)
+app.include_router(reports.router)
+app.include_router(notifications.router)
 
 
 @app.on_event("startup")

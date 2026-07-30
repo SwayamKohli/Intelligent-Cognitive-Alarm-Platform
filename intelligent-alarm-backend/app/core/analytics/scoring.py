@@ -1,5 +1,8 @@
 def calculate_habit_score(
-    consistency: float, challenge_rate: float, snooze_reduction: float, sleep_adherence: float
+    consistency: float,
+    challenge_rate: float,
+    snooze_reduction: float,
+    sleep_adherence: float,
 ) -> float:
     """
     Calculates the user's overall habit score.

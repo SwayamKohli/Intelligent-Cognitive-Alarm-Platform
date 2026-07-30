@@ -56,3 +56,5 @@ httpx
 thefuzz
 python-Levenshtein
 jinja2
+openpyxl==3.1.5
+reportlab==5.0.0

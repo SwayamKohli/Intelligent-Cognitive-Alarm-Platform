@@ -19,7 +19,18 @@ def get_local_random(user_id: str | None, total_attempts: int) -> random.Random:
 # --- Word Scramble Data ---
 SCRAMBLE_WORDS = {
     1: ["dog", "cat", "sun", "star", "tree", "fish", "ball", "book", "ship", "frog"],
-    2: ["house", "clock", "water", "apple", "bread", "train", "plant", "smile", "paper", "glass"],
+    2: [
+        "house",
+        "clock",
+        "water",
+        "apple",
+        "bread",
+        "train",
+        "plant",
+        "smile",
+        "paper",
+        "glass",
+    ],
     3: [
         "garden",
         "planet",
@@ -85,7 +96,10 @@ def generate_word_scramble(
         "client_payload": {
             "challenge_type": "word_scramble",
             "difficulty": difficulty,
-            "content": {"prompt": "Unscramble this word:", "scrambled_word": scrambled_word},
+            "content": {
+                "prompt": "Unscramble this word:",
+                "scrambled_word": scrambled_word,
+            },
         },
         "server_answer": original_word,
     }
@@ -106,7 +120,10 @@ RIDDLES = {
             "question": "I have keys but no locks. I have space but no room. You can enter but can't go outside. What am I?",
             "answer": "keyboard",
         },
-        {"question": "What is full of holes but still holds water?", "answer": "sponge"},
+        {
+            "question": "What is full of holes but still holds water?",
+            "answer": "sponge",
+        },
         {
             "question": "What belongs to you, but other people use it more than you do?",
             "answer": "name",
@@ -146,7 +163,10 @@ RIDDLES = {
             "question": "You see a boat filled with people. It has not sunk, but when you look again you don't see a single person on the boat. Why?",
             "answer": "married",
         },
-        {"question": "What is always in front of you but can't be seen?", "answer": "future"},
+        {
+            "question": "What is always in front of you but can't be seen?",
+            "answer": "future",
+        },
     ],
 }
 
@@ -193,7 +213,12 @@ QUIZZES = {
     2: [
         {
             "question": "Which is the largest ocean on Earth?",
-            "options": ["Pacific Ocean", "Atlantic Ocean", "Indian Ocean", "Arctic Ocean"],
+            "options": [
+                "Pacific Ocean",
+                "Atlantic Ocean",
+                "Indian Ocean",
+                "Arctic Ocean",
+            ],
             "answer": "Pacific Ocean",
         },
         {
@@ -203,7 +228,12 @@ QUIZZES = {
         },
         {
             "question": "Who wrote 'Romeo and Juliet'?",
-            "options": ["William Shakespeare", "Charles Dickens", "Mark Twain", "Jane Austen"],
+            "options": [
+                "William Shakespeare",
+                "Charles Dickens",
+                "Mark Twain",
+                "Jane Austen",
+            ],
             "answer": "William Shakespeare",
         },
     ],
@@ -227,7 +257,12 @@ QUIZZES = {
     4: [
         {
             "question": "What is the speed of light in a vacuum (approximate)?",
-            "options": ["300,000 km/s", "150,000 km/s", "500,000 km/s", "1,000,000 km/s"],
+            "options": [
+                "300,000 km/s",
+                "150,000 km/s",
+                "500,000 km/s",
+                "1,000,000 km/s",
+            ],
             "answer": "300,000 km/s",
         },
         {
@@ -244,7 +279,12 @@ QUIZZES = {
     5: [
         {
             "question": "Who is credited with proposing the theory of General Relativity?",
-            "options": ["Albert Einstein", "Isaac Newton", "Niels Bohr", "Stephen Hawking"],
+            "options": [
+                "Albert Einstein",
+                "Isaac Newton",
+                "Niels Bohr",
+                "Stephen Hawking",
+            ],
             "answer": "Albert Einstein",
         },
         {

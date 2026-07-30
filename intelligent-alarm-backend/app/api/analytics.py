@@ -89,7 +89,9 @@ async def get_ai_recommendations(
     )
 
     recommendations = await generate_ai_recommendations(
-        user_name=current_user.full_name or "User", telemetry_data=telemetry, habit_score=score
+        user_name=current_user.full_name or "User",
+        telemetry_data=telemetry,
+        habit_score=score,
     )
 
     return recommendations
