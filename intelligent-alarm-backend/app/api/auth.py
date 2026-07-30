@@ -6,18 +6,11 @@ from jose import JWTError, jwt
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, Token, UserResponse
-from app.core.security import (
-    get_password_hash,
-    verify_password,
-    create_access_token,
-    SECRET_KEY,
-    ALGORITHM,
-)
+from app.core.security import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
 
 router = APIRouter(prefix="/users", tags=["Authentication"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
-
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """Dependency to validate the JWT token and return the logged-in user."""
@@ -33,12 +26,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-
+        
     user = db.query(User).filter(User.email == email).first()
     if user is None:
         raise credentials_exception
     return user
-
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
@@ -48,21 +40,22 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_pwd = get_password_hash(user_in.password)
-    new_user = User(email=user_in.email, password_hash=hashed_pwd, full_name=user_in.full_name)
+    new_user = User(
+        email=user_in.email,
+        password_hash=hashed_pwd,
+        full_name=user_in.full_name
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
-
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Log in to get a JWT access token."""
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
 
     access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}

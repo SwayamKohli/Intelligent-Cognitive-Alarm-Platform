@@ -9,19 +9,16 @@ groq_api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=groq_api_key) if groq_api_key else None
 MODEL = "llama-3.1-8b-instant"
 
-
-def generate_ai_challenge(
-    challenge_type: str, difficulty: int, avoid_topics: list[str] = []
-) -> dict:
+def generate_ai_challenge(challenge_type: str, difficulty: int, avoid_topics: list[str] = []) -> dict:
     """
     Token-optimized Groq API router with Indian cultural localization.
     """
-
+    
     avoid_str = f"Avoid: {', '.join(avoid_topics)}." if avoid_topics else ""
-
+    
     # Force localized context for realistic difficulty balancing
     localization = (
-        "Context: Use everyday Indian life, Indian geography, Indian history, or general science. "
+        "Context: Use everyday Indian life, Indian geography, Indian history, or general science. " 
         "Make it relatable to a young adult in India."
     )
 
@@ -52,9 +49,9 @@ def generate_ai_challenge(
     response = client.chat.completions.create(
         messages=[{"role": "system", "content": system_prompt}],
         model=MODEL,
-        temperature=0.8,
-        max_tokens=150,
-        response_format={"type": "json_object"},
+        temperature=0.8, 
+        max_tokens=150,  
+        response_format={"type": "json_object"}, 
     )
 
     raw_json = json.loads(response.choices[0].message.content)
@@ -63,9 +60,9 @@ def generate_ai_challenge(
         "client_payload": {
             "challenge_type": challenge_type,
             "difficulty": difficulty,
-            "content": {},
+            "content": {}
         },
-        "server_answer": raw_json["answer"].lower().strip(),
+        "server_answer": raw_json["answer"].lower().strip()
     }
 
     if challenge_type == "riddle":

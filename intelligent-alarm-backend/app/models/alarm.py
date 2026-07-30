@@ -25,13 +25,13 @@ class Alarm(Base):
         GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
-    label: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g. "Gym Alarm"
+    label: Mapped[str] = mapped_column(String(100), nullable=False)   # e.g. "Gym Alarm"
     time: Mapped[time] = mapped_column(Time, nullable=False)
     alarm_type: Mapped[AlarmType] = mapped_column(Enum(AlarmType), nullable=False)
 
     # For recurring alarms — store active weekdays, e.g. "MON,TUE,WED"
     recurrence_days: Mapped[str | None] = mapped_column(String(50), nullable=True)
-
+    
     # NEW: Alarm-specific challenge override (comma-separated, e.g., "math,logic")
     preferred_challenges: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

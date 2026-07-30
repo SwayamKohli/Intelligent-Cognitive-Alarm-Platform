@@ -1,21 +1,18 @@
 from app.models.user import DifficultyLevel
 
-
-def calculate_new_difficulty(
-    current_difficulty: DifficultyLevel, last_5_attempts: list[bool]
-) -> DifficultyLevel:
+def calculate_new_difficulty(current_difficulty: DifficultyLevel, last_5_attempts: list[bool]) -> DifficultyLevel:
     """
     Evaluates the last 5 challenge attempts (True for success, False for timeout/failure).
     Rule: +1 level if 5 consecutive successes. -1 level if 3 consecutive failures.
     """
     levels = [
-        DifficultyLevel.BEGINNER,
-        DifficultyLevel.EASY,
-        DifficultyLevel.MEDIUM,
-        DifficultyLevel.HARD,
-        DifficultyLevel.EXPERT,
+        DifficultyLevel.BEGINNER, 
+        DifficultyLevel.EASY, 
+        DifficultyLevel.MEDIUM, 
+        DifficultyLevel.HARD, 
+        DifficultyLevel.EXPERT
     ]
-
+    
     if current_difficulty not in levels:
         return current_difficulty
 

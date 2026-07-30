@@ -20,12 +20,12 @@ df = pd.read_csv(csv_path)
 feature_encoder = LabelEncoder()
 target_encoder = LabelEncoder()
 
-df["last_failed_type"] = feature_encoder.fit_transform(df["last_failed_type"].astype(str))
-df["target_challenge_type"] = target_encoder.fit_transform(df["target_challenge_type"].astype(str))
+df['last_failed_type'] = feature_encoder.fit_transform(df['last_failed_type'].astype(str))
+df['target_challenge_type'] = target_encoder.fit_transform(df['target_challenge_type'].astype(str))
 
 # Define Features (X) and Multi-Outputs (y)
-X = df[["snooze_count", "historical_success_rate", "avg_time_taken_ms", "last_failed_type"]]
-y = df[["target_challenge_type", "target_difficulty", "target_multi_step"]]
+X = df[['snooze_count', 'historical_success_rate', 'avg_time_taken_ms', 'last_failed_type']]
+y = df[['target_challenge_type', 'target_difficulty', 'target_multi_step']]
 
 # FIX: Corrected parameter name to test_size
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -42,7 +42,7 @@ y_pred = model.predict(X_test)
 y_test_np = y_test.values
 
 print("\nModel Evaluation Metrics:")
-targets = ["Challenge Type", "Difficulty Level", "Multi-Step Streak"]
+targets = ['Challenge Type', 'Difficulty Level', 'Multi-Step Streak']
 for i, name in enumerate(targets):
     acc = accuracy_score(y_test_np[:, i], y_pred[:, i])
     print(f"  - {name} Prediction Accuracy: {acc * 100:.2f}%")
@@ -51,7 +51,7 @@ for i, name in enumerate(targets):
 model_artifact = {
     "model": model,
     "feature_encoder": feature_encoder,
-    "target_encoder": target_encoder,
+    "target_encoder": target_encoder
 }
 
 os.makedirs("models", exist_ok=True)

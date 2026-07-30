@@ -54,7 +54,6 @@ class Habit(Base):
 
 class HabitLog(Base):
     """One daily check-in entry for a habit — powers streaks and scoring history."""
-
     __tablename__ = "habit_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
@@ -73,6 +72,4 @@ class HabitLog(Base):
     habit: Mapped["Habit"] = relationship(back_populates="logs")
 
     def __repr__(self) -> str:
-        return (
-            f"<HabitLog habit_id={self.habit_id} date={self.log_date} completed={self.completed}>"
-        )
+        return f"<HabitLog habit_id={self.habit_id} date={self.log_date} completed={self.completed}>"

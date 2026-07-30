@@ -33,11 +33,11 @@ def normalize_text(text: str) -> str:
     """
     text = str(text).lower()
     # Remove punctuation using standard string translation
-    text = text.translate(str.maketrans("", "", string.punctuation))
+    text = text.translate(str.maketrans('', '', string.punctuation))
     # Remove common grammatical articles that users might casually type
-    text = re.sub(r"\b(a|an|the)\b", " ", text)
+    text = re.sub(r'\b(a|an|the)\b', ' ', text)
     # Strip any double spaces created by the regex
-    return " ".join(text.split())
+    return ' '.join(text.split())
 
 
 # ── GET /challenges/next ─────────────────────────────────────────────
@@ -52,14 +52,10 @@ async def get_next_challenge_endpoint(
     Fetches the next challenge. Initializes or maintains a multi-step verification
     streak depending on the user's recent snooze behavior and ML predictions.
     """
-    alarm = (
-        db.query(Alarm)
-        .filter(
-            Alarm.id == alarm_id,
-            Alarm.user_id == current_user.id,
-        )
-        .first()
-    )
+    alarm = db.query(Alarm).filter(
+        Alarm.id == alarm_id,
+        Alarm.user_id == current_user.id,
+    ).first()
 
     if alarm is None:
         raise HTTPException(
@@ -68,25 +64,29 @@ async def get_next_challenge_endpoint(
         )
 
     # 1. Query the V2 ML Pipeline
-    ml_predictions = predict_next_challenge(snooze_count=alarm.active_snooze_count)
-
+    ml_predictions = predict_next_challenge(
+        snooze_count=alarm.active_snooze_count
+    )
+    
     difficulty = ml_predictions["difficulty"]
     target_streak = ml_predictions["target_streak"]
-
+    
     # 2. Decide the Challenge Type
-    final_challenge_type = (
-        challenge_type if challenge_type != "random" else ml_predictions["challenge_type"]
-    )
+    final_challenge_type = challenge_type if challenge_type != "random" else ml_predictions["challenge_type"]
 
     key = str(alarm_id)
-
+    
     # 3. Initialize or fetch the active streak state
     if key not in _pending_answers:
-        _pending_answers[key] = {"current_streak": 0, "target_streak": target_streak}
+        _pending_answers[key] = {
+            "current_streak": 0,
+            "target_streak": target_streak
+        }
     else:
         # Update target streak in case they snoozed since the last request
         _pending_answers[key]["target_streak"] = max(
-            _pending_answers[key]["target_streak"], target_streak
+            _pending_answers[key]["target_streak"], 
+            target_streak
         )
 
     # Fetch total attempts from MongoDB
@@ -102,7 +102,7 @@ async def get_next_challenge_endpoint(
         challenge_type=final_challenge_type,
         user_id=user_seed_key,
         total_attempts=total_attempts,
-        allowed_types=allowed_types,  # Pass preferences to the generator!
+        allowed_types=allowed_types # Pass preferences to the generator!
     )
 
     # Stash the new correct answer and type for the verify endpoint
@@ -114,7 +114,7 @@ async def get_next_challenge_endpoint(
     response_payload = challenge_data["client_payload"]
     response_payload["streak_state"] = {
         "current": _pending_answers[key]["current_streak"],
-        "target": _pending_answers[key]["target_streak"],
+        "target": _pending_answers[key]["target_streak"]
     }
 
     return response_payload
@@ -127,11 +127,11 @@ async def verify_challenge(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Validates the answer. If correct, increments the streak.
+    Validates the answer. If correct, increments the streak. 
     If the streak hits the target, dismisses the alarm. If incorrect, resets the streak.
     """
     key = str(body.alarm_id)
-
+    
     state = _pending_answers.get(key)
 
     if state is None or "answer" not in state:
@@ -143,11 +143,11 @@ async def verify_challenge(
     # --- UX Fix: Normalize answers and apply fuzzy Levenshtein matching ---
     norm_user = normalize_text(body.answer)
     norm_correct = normalize_text(state["answer"])
-
+    
     # Calculate Levenshtein distance ratio (0 to 100)
     similarity_score = fuzz.ratio(norm_user, norm_correct)
-
-    print("\n[DEBUG] Verification Engine:")
+    
+    print(f"\n[DEBUG] Verification Engine:")
     print(f"        User Input (Raw)    : '{body.answer}'")
     print(f"        User Input (Norm)   : '{norm_user}'")
     print(f"        Expected   (Norm)   : '{norm_correct}'")
@@ -160,12 +160,12 @@ async def verify_challenge(
         or (norm_correct != "" and similarity_score >= 85)
     )
     # -------------------------------------------------------------------------
-
+    
     dismiss_alarm = False
 
     if success:
         state["current_streak"] += 1
-
+        
         # Check if the wake-up verification criteria is met
         if state["current_streak"] >= state["target_streak"]:
             dismiss_alarm = True
@@ -179,12 +179,12 @@ async def verify_challenge(
         user_id=str(current_user.id),
         challenge_type=state.get("challenge_type", "unknown"),
         difficulty_level=str(state.get("difficulty", 1)),
-        time_to_solve_seconds=0.0,  # UI will provide this later
-        time_taken_ms=0,
-        timeout_failed=False,
+        time_to_solve_seconds=0.0, # UI will provide this later
+        time_taken_ms=0,           
+        timeout_failed=False,     
         failed_attempts=1 if not success else 0,
     )
-
+    
     try:
         await log_challenge_attempt(log_entry)
     except Exception as e:
@@ -194,5 +194,5 @@ async def verify_challenge(
         "success": success,
         "dismiss_alarm": dismiss_alarm,
         "current_streak": state.get("current_streak", 0) if state else 0,
-        "target_streak": state.get("target_streak", 1) if state else 1,
+        "target_streak": state.get("target_streak", 1) if state else 1
     }

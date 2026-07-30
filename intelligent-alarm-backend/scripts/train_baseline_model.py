@@ -5,11 +5,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
-
 def train_model():
     print("Loading synthetic data...")
-    data_path = "data/synthetic_cognitive_data.csv"
-
+    data_path = 'data/synthetic_cognitive_data.csv'
+    
     if not os.path.exists(data_path):
         print(f"Error: {data_path} not found. Run generate_synthetic_data.py first.")
         return
@@ -17,8 +16,8 @@ def train_model():
     df = pd.read_csv(data_path)
 
     # Define Features (X) and Target (y)
-    X = df[["habit_score", "snooze_count", "avg_time_to_solve", "failed_attempts"]]
-    y = df["target_difficulty"]
+    X = df[['habit_score', 'snooze_count', 'avg_time_to_solve', 'failed_attempts']]
+    y = df['target_difficulty']
 
     # Split into 80% training and 20% testing
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -35,11 +34,10 @@ def train_model():
     print(classification_report(y_test, predictions))
 
     # Save the model
-    os.makedirs("models", exist_ok=True)
-    model_path = "models/adaptive_model_v1.pkl"
+    os.makedirs('models', exist_ok=True)
+    model_path = 'models/adaptive_model_v1.pkl'
     joblib.dump(model, model_path)
     print(f"\n✅ Model successfully saved to {model_path}")
-
 
 if __name__ == "__main__":
     train_model()

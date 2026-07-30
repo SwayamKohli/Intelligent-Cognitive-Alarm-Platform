@@ -11,7 +11,6 @@ from app.core.analytics.groq_recommendations import generate_ai_recommendations
 
 router = APIRouter(prefix="/analytics", tags=["Analytics & AI"])
 
-
 def analytics_key_builder(
     func,
     namespace: str = "",
@@ -31,7 +30,8 @@ def analytics_key_builder(
 @router.get("/habit-score")
 @cache(expire=43200, key_builder=analytics_key_builder)
 async def get_habit_score(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
     Calculates 7-day Habit Score using SK's scoring formula and MongoDB telemetry.
@@ -48,15 +48,13 @@ async def get_habit_score(
     total_snoozes = telemetry.get("total_snoozes", 0)
     snooze_reduction = round(max(0.0, 100.0 - (total_snoozes * 10.0)), 2)
 
-    sleep_adherence = (
-        100.0 if (current_user.target_bedtime and current_user.target_wake_time) else 80.0
-    )
+    sleep_adherence = 100.0 if (current_user.target_bedtime and current_user.target_wake_time) else 80.0
 
     score = calculate_habit_score(
         consistency=consistency,
         challenge_rate=challenge_rate,
         snooze_reduction=snooze_reduction,
-        sleep_adherence=sleep_adherence,
+        sleep_adherence=sleep_adherence
     )
 
     current_user.habit_score = score
@@ -67,14 +65,15 @@ async def get_habit_score(
         "consistency": consistency,
         "challenge_rate": challenge_rate,
         "snooze_reduction": snooze_reduction,
-        "sleep_adherence": sleep_adherence,
+        "sleep_adherence": sleep_adherence
     }
 
 
 @router.get("/recommendations")
 @cache(expire=43200, key_builder=analytics_key_builder)
 async def get_ai_recommendations(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
     Generates AI recommendations using Llama 3 via Groq based on 7-day telemetry.
@@ -82,14 +81,12 @@ async def get_ai_recommendations(
     """
     telemetry = await get_user_telemetry_last_7_days(str(current_user.id))
 
-    score = (
-        current_user.habit_score
-        if current_user.habit_score and current_user.habit_score > 0
-        else 75.0
-    )
+    score = current_user.habit_score if current_user.habit_score and current_user.habit_score > 0 else 75.0
 
     recommendations = await generate_ai_recommendations(
-        user_name=current_user.full_name or "User", telemetry_data=telemetry, habit_score=score
+        user_name=current_user.full_name or "User",
+        telemetry_data=telemetry,
+        habit_score=score
     )
 
     return recommendations
