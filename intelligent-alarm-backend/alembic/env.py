@@ -10,6 +10,7 @@ load_dotenv()
 from app.models.base import Base
 from app.models.user import User
 from app.models.alarm import Alarm
+from app.models.notification import NotificationPreference
 from app.models.habit import Habit, HabitLog
 
 from logging.config import fileConfig
