@@ -24,41 +24,42 @@ function CoachDashboard() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
-const handleDownloadPdf = async () => {
-  try {
-    const response = await api.get("/reports/export/pdf", {
-      responseType: "blob",
-    });
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "Coach_Report.pdf");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (error) {
-    console.error(error);
-  }
-};
+  const handleDownloadPdf = async (userId, userName) => {
+    try {
+      const response = await api.get(`/reports/export/pdf?user_id=${userId}`, {
+        responseType: "blob",
+      });
 
-const handleExportExcel = async () => {
-  try {
-    const response = await api.get("/reports/export/excel", {
-      responseType: "blob",
-    });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${userName}_Sleep_Report.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "Coach_Telemetry.xlsx");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (error) {
-    console.error(error);
-  }
-};
+  const handleExportExcel = async (userId, userName) => {
+    try {
+      const response = await api.get(`/reports/export/excel?user_id=${userId}`, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${userName}_Telemetry.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -87,21 +88,6 @@ const handleExportExcel = async () => {
           Coach Dashboard
         </motion.h1>
         <p className="coach-subtitle">Assigned users and their habit adherence</p>
-        <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
-  <button
-    className="btn-accent"
-    onClick={handleDownloadPdf}
-  >
-    📄 Download PDF Report
-  </button>
-
-  <button
-    className="btn-ghost"
-    onClick={handleExportExcel}
-  >
-    📊 Export Excel Telemetry
-  </button>
-</div>
 
         <motion.div
           className="glass-card coach-panel"
@@ -122,6 +108,7 @@ const handleExportExcel = async () => {
                 <span>Email</span>
                 <span>Target Schedule</span>
                 <span>Habit Score</span>
+                <span>Reports</span>
               </div>
 
               <motion.div variants={staggerContainer} initial="initial" animate="animate">
@@ -143,6 +130,21 @@ const handleExportExcel = async () => {
                         {user.bedtime ? `${user.bedtime} – ${user.wake_time}` : "Not set"}
                       </span>
                       <span className={`rate-badge ${scoreTier(score)}`}>{score}%</span>
+                      
+                      <span style={{ display: "flex", gap: "8px" }}>
+                        <button 
+                          className="btn-ghost" 
+                          style={{ padding: "4px 8px", fontSize: "14px" }}
+                          onClick={() => handleDownloadPdf(user.id, user.full_name || 'User')}
+                          title="Download PDF"
+                        >📄</button>
+                        <button 
+                          className="btn-ghost" 
+                          style={{ padding: "4px 8px", fontSize: "14px" }}
+                          onClick={() => handleExportExcel(user.id, user.full_name || 'User')}
+                          title="Export Excel"
+                        >📊</button>
+                      </span>
                     </motion.div>
                   );
                 })}

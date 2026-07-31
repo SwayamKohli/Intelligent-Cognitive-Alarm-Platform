@@ -84,13 +84,27 @@ const [savingNotifications, setSavingNotifications] = useState(false);
   }
 };
   const fetchRecommendations = async () => {
-  try {
-    const { data } = await api.get("/analytics/recommendations");
-    setRecommendations(data);
-  } catch (error) {
-    console.log(error);
-  }
-};
+    try {
+      const { data } = await api.get("/analytics/recommendations");
+      
+      // Safely extract the string if Groq returns a nested object
+      const safeExtract = (item) => {
+        if (typeof item === 'object' && item !== null) {
+          return item.advice || JSON.stringify(item);
+        }
+        return typeof item === 'string' ? item : 'No suggestions available.';
+      };
+
+      setRecommendations({
+        sleep: safeExtract(data.sleep),
+        wake_up: safeExtract(data.wake_up),
+        habit: safeExtract(data.habit),
+        productivity: safeExtract(data.productivity),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
   const fetchNotificationSettings = async () => {
   try {
     const { data } = await api.get("/notifications/preferences");
