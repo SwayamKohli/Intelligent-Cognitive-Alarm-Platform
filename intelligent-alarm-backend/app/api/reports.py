@@ -55,7 +55,7 @@ def _calculate_sleep_duration(bedtime: Optional[time], wake_time: Optional[time]
 async def export_pdf_report(
     user_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Generates a formatted PDF sleep & habit summary report.
@@ -65,8 +65,17 @@ async def export_pdf_report(
 
     # If a specific user_id is requested, verify permissions and fetch them
     if user_id and user_id != str(current_user.id):
-        if str(current_user.role).lower() not in ["userrole.admin", "userrole.coach", "admin", "coach", "wellness_coach", "userrole.wellness_coach"]:
-            raise HTTPException(status_code=403, detail="Not authorized to pull other user reports.")
+        if str(current_user.role).lower() not in [
+            "userrole.admin",
+            "userrole.coach",
+            "admin",
+            "coach",
+            "wellness_coach",
+            "userrole.wellness_coach",
+        ]:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to pull other user reports."
+            )
         target_user = db.query(User).filter(User.id == user_id).first()
         if not target_user:
             raise HTTPException(status_code=404, detail="User not found.")
@@ -389,7 +398,7 @@ async def export_pdf_report(
 async def export_excel_report(
     user_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Exports last 7 days MongoDB telemetry, habit progression, sleep duration,
@@ -399,8 +408,17 @@ async def export_excel_report(
 
     # If a specific user_id is requested, verify permissions and fetch them
     if user_id and user_id != str(current_user.id):
-        if str(current_user.role).lower() not in ["userrole.admin", "userrole.coach", "admin", "coach", "wellness_coach", "userrole.wellness_coach"]:
-            raise HTTPException(status_code=403, detail="Not authorized to pull other user reports.")
+        if str(current_user.role).lower() not in [
+            "userrole.admin",
+            "userrole.coach",
+            "admin",
+            "coach",
+            "wellness_coach",
+            "userrole.wellness_coach",
+        ]:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to pull other user reports."
+            )
         target_user = db.query(User).filter(User.id == user_id).first()
         if not target_user:
             raise HTTPException(status_code=404, detail="User not found.")
