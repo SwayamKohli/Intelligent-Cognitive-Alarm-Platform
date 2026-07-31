@@ -24,6 +24,41 @@ function CoachDashboard() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+const handleDownloadPdf = async () => {
+  try {
+    const response = await api.get("/reports/export/pdf", {
+      responseType: "blob",
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "Coach_Report.pdf");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const handleExportExcel = async () => {
+  try {
+    const response = await api.get("/reports/export/excel", {
+      responseType: "blob",
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "Coach_Telemetry.xlsx");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -52,6 +87,21 @@ function CoachDashboard() {
           Coach Dashboard
         </motion.h1>
         <p className="coach-subtitle">Assigned users and their habit adherence</p>
+        <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+  <button
+    className="btn-accent"
+    onClick={handleDownloadPdf}
+  >
+    📄 Download PDF Report
+  </button>
+
+  <button
+    className="btn-ghost"
+    onClick={handleExportExcel}
+  >
+    📊 Export Excel Telemetry
+  </button>
+</div>
 
         <motion.div
           className="glass-card coach-panel"

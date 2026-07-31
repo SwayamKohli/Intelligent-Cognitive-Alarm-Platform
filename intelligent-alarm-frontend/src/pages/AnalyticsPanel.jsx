@@ -1,4 +1,15 @@
 import { motion } from "framer-motion";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 import { staggerContainer, staggerItem } from "../lib/motion";
 
 const RADIUS = 54;
@@ -37,6 +48,17 @@ const BADGES = [
 ];
 
 const AnalyticsPanel = ({ habitScore, recommendations }) => {
+  const trendData =
+  habitScore?.weekly_trends ??
+  [
+    { day: "Mon", consistency: 82, snooze: 12, challengeTime: 42 },
+    { day: "Tue", consistency: 88, snooze: 9, challengeTime: 39 },
+    { day: "Wed", consistency: 79, snooze: 15, challengeTime: 45 },
+    { day: "Thu", consistency: 91, snooze: 6, challengeTime: 34 },
+    { day: "Fri", consistency: 86, snooze: 10, challengeTime: 37 },
+    { day: "Sat", consistency: 93, snooze: 5, challengeTime: 30 },
+    { day: "Sun", consistency: 89, snooze: 8, challengeTime: 35 },
+  ];
   const score = habitScore?.habit_score ?? habitScore?.overall_score ?? habitScore?.score ?? 0;
   const offset = CIRCUMFERENCE - (Math.min(score, 100) / 100) * CIRCUMFERENCE;
 
@@ -156,6 +178,63 @@ const AnalyticsPanel = ({ habitScore, recommendations }) => {
             </motion.div>
           ))}
         </motion.div>
+      </div>
+            <div className="analytics-section">
+        <h3>Historical Trends</h3>
+
+        <div className="trend-grid">
+          <div className="trend-card">
+            <h4>7-Day Wake-up Consistency</h4>
+
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <XAxis dataKey="day" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="consistency"
+                  stroke="#f4c542"
+                  strokeWidth={3}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="trend-card">
+            <h4>Average Snooze Delay (mins)</h4>
+
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <XAxis dataKey="day" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" />
+                <Tooltip />
+                <Bar dataKey="snooze" fill="#f4c542" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="trend-card trend-card-full">
+            <h4>Cognitive Challenge Completion Time (sec)</h4>
+
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <XAxis dataKey="day" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="challengeTime"
+                  stroke="#b8862b"
+                  strokeWidth={3}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     </div>
   );
