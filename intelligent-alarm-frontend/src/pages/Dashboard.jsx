@@ -46,6 +46,15 @@ function Dashboard() {
   productivity: "",
 });
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState({
+  bedtime_warning_enabled: true,
+  bedtime_warning_minutes: 30,
+  morning_streak_alert: true,
+  challenge_reminders: false,
+  weekly_sleep_report: true,
+});
+
+const [savingNotifications, setSavingNotifications] = useState(false);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -80,6 +89,14 @@ function Dashboard() {
     setRecommendations(data);
   } catch (error) {
     console.log(error);
+  }
+};
+  const fetchNotificationSettings = async () => {
+  try {
+    const { data } = await api.get("/notifications/preferences");
+    setNotificationSettings(data);
+  } catch (error) {
+    console.error(error);
   }
 };
   const fetchProfile = async () => {
@@ -151,9 +168,26 @@ function Dashboard() {
     fetchProfile();
     fetchHabitScore();
     fetchRecommendations();
+    fetchNotificationSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
+  const handleSaveNotifications = async () => {
+  setSavingNotifications(true);
 
+  try {
+    await api.put(
+      "/notifications/preferences",
+      notificationSettings
+    );
+
+    showToast("Notification settings updated");
+  } catch (error) {
+    console.error(error);
+    showToast("Failed to update notification settings", "error");
+  } finally {
+    setSavingNotifications(false);
+  }
+};
   const handleAlarmCreated = () => {
     setShowCreateAlarm(false);
     fetchAlarms();
@@ -178,6 +212,43 @@ function Dashboard() {
     localStorage.removeItem("access_token");
     navigate("/login");
   };
+  const handleDownloadPdf = async () => {
+  try {
+    const response = await api.get("/reports/export/pdf", {
+      responseType: "blob",
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "Sleep_Report.pdf");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    console.error(error);
+    showToast("Failed to download PDF report", "error");
+  }
+};
+
+const handleExportExcel = async () => {
+  try {
+    const response = await api.get("/reports/export/excel", {
+      responseType: "blob",
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "Telemetry_Report.xlsx");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    console.error(error);
+    showToast("Failed to export Excel report", "error");
+  }
+};
   const score =
   habitScore?.overall_score ?? habitScore?.score ?? 0;
 
@@ -343,6 +414,100 @@ const progress = circumference - (score / 100) * circumference;
                 >
                   {savingProfile ? "Saving…" : "Save Profile"}
                 </motion.button>
+                <div className="glass-card" style={{ marginTop: "24px" }}>
+  <h3>Notification Preferences</h3>
+
+  <div className="field-group">
+    <label>
+      <input
+        type="checkbox"
+        checked={notificationSettings.bedtime_warning_enabled}
+        onChange={(e) =>
+          setNotificationSettings({
+            ...notificationSettings,
+            bedtime_warning_enabled: e.target.checked,
+          })
+        }
+      />
+      {" "}Enable Bedtime Reminder
+    </label>
+  </div>
+
+  <div className="field-group">
+    <label>Reminder Minutes Before Bedtime</label>
+    <input
+      type="number"
+      min="5"
+      max="120"
+      value={notificationSettings.bedtime_warning_minutes}
+      onChange={(e) =>
+        setNotificationSettings({
+          ...notificationSettings,
+          bedtime_warning_minutes: Number(e.target.value),
+        })
+      }
+    />
+  </div>
+
+  <div className="field-group">
+    <label>
+      <input
+        type="checkbox"
+        checked={notificationSettings.morning_streak_alert}
+        onChange={(e) =>
+          setNotificationSettings({
+            ...notificationSettings,
+            morning_streak_alert: e.target.checked,
+          })
+        }
+      />
+      {" "}Morning Streak Alerts
+    </label>
+  </div>
+
+  <div className="field-group">
+    <label>
+      <input
+        type="checkbox"
+        checked={notificationSettings.challenge_reminders}
+        onChange={(e) =>
+          setNotificationSettings({
+            ...notificationSettings,
+            challenge_reminders: e.target.checked,
+          })
+        }
+      />
+      {" "}Challenge Reminders
+    </label>
+  </div>
+
+  <div className="field-group">
+    <label>
+      <input
+        type="checkbox"
+        checked={notificationSettings.weekly_sleep_report}
+        onChange={(e) =>
+          setNotificationSettings({
+            ...notificationSettings,
+            weekly_sleep_report: e.target.checked,
+          })
+        }
+      />
+      {" "}Weekly Sleep Report
+    </label>
+  </div>
+
+  <motion.button
+    className="btn-accent full-width"
+    onClick={handleSaveNotifications}
+    disabled={savingNotifications}
+    whileTap={{ scale: 0.97 }}
+  >
+    {savingNotifications
+      ? "Saving..."
+      : "Save Notification Settings"}
+  </motion.button>
+</div>
               </motion.div>
             )}
 
@@ -435,10 +600,32 @@ const progress = circumference - (score / 100) * circumference;
                 {loadingAnalytics ? (
   <p className="empty-state">Loading analytics...</p>
 ) : (
+  <>
   <AnalyticsPanel
     habitScore={habitScore}
     recommendations={recommendations}
   />
+
+  <div className="analytics-section" style={{ marginTop: "32px" }}>
+    <h3>Reports & Exports</h3>
+
+    <div className="recommendation-grid">
+      <button
+  className="btn-accent"
+  onClick={handleDownloadPdf}
+>
+        📄 Download PDF Report
+      </button>
+
+      <button
+  className="btn-ghost"
+  onClick={handleExportExcel}
+>
+        📊 Export Excel Telemetry
+      </button>
+    </div>
+  </div>
+</>
 )}
               </motion.div>
             )}

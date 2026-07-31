@@ -558,7 +558,30 @@
   font-weight: 600;
   text-align: right;
 }
+/* Historical Trend Charts */
+.trend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
 
+.trend-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.trend-card h4 {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--text-h);
+  text-align: left;
+}
+
+.trend-card-full {
+  grid-column: 1 / -1;
+}
 /* Responsive */
 @media (max-width: 900px) {
   .dashboard-layout {
