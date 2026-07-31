@@ -43,7 +43,22 @@ export default function AnalyticsScreen() {
       ]);
 
       setHabitData(scoreRes.data);
-      if (recsRes.data) setRecommendations(recsRes.data);
+      
+      if (recsRes.data) {
+        const safeExtract = (item: any) => {
+          if (typeof item === 'object' && item !== null) {
+            return item.advice || JSON.stringify(item);
+          }
+          return typeof item === 'string' ? item : 'No suggestions available.';
+        };
+
+        setRecommendations({
+          sleep: safeExtract(recsRes.data.sleep),
+          wake_up: safeExtract(recsRes.data.wake_up),
+          habit: safeExtract(recsRes.data.habit),
+          productivity: safeExtract(recsRes.data.productivity),
+        });
+      }
 
       const score = scoreRes.data?.habit_score ?? scoreRes.data?.overall_score ?? scoreRes.data?.score ?? 0;
       const offset = CIRCUMFERENCE - (Math.min(score, 100) / 100) * CIRCUMFERENCE;

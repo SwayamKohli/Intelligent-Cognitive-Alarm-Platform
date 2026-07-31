@@ -318,6 +318,13 @@ async def export_pdf_report(
 
     # Section 4: AI Recommendations Summary
     story.append(Paragraph("4. Personalized Recommendation Summary", section_title))
+
+    def extract_rec(key):
+        val = recommendations.get(key, "N/A")
+        if isinstance(val, dict):
+            return val.get("advice", str(val))
+        return str(val)
+
     rec_table_data = [
         [
             Paragraph("Category", cell_bold),
@@ -325,19 +332,19 @@ async def export_pdf_report(
         ],
         [
             Paragraph("Sleep Optimization", rec_title),
-            Paragraph(recommendations.get("sleep", "N/A"), cell_normal),
+            Paragraph(extract_rec("sleep"), cell_normal),
         ],
         [
             Paragraph("Wake-Up Routine", rec_title),
-            Paragraph(recommendations.get("wake_up", "N/A"), cell_normal),
+            Paragraph(extract_rec("wake_up"), cell_normal),
         ],
         [
             Paragraph("Habit Building", rec_title),
-            Paragraph(recommendations.get("habit", "N/A"), cell_normal),
+            Paragraph(extract_rec("habit"), cell_normal),
         ],
         [
             Paragraph("Productivity Boost", rec_title),
-            Paragraph(recommendations.get("productivity", "N/A"), cell_normal),
+            Paragraph(extract_rec("productivity"), cell_normal),
         ],
     ]
     rec_table = Table(rec_table_data, colWidths=[140, 400])

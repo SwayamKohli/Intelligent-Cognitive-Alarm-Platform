@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Alert, ScrollView, ActivityIndicator, Platform,
+  Alert, ScrollView, ActivityIndicator, Platform, Switch
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Moon, Sunrise } from 'lucide-react-native';
+import { Moon, Sunrise, Download, FileText, Bell } from 'lucide-react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as SecureStore from 'expo-secure-store';
 import api from '../lib/api';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -20,6 +23,8 @@ const TIMEZONES = [
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
 
   const [fullName, setFullName] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
@@ -31,8 +36,17 @@ export default function ProfileScreen() {
   const [showBedtimePicker, setShowBedtimePicker] = useState(false);
   const [showWakeTimePicker, setShowWakeTimePicker] = useState(false);
 
+  // Notification Preferences State
+  const [notifPrefs, setNotifPrefs] = useState({
+    bedtime_warning_enabled: true,
+    bedtime_warning_minutes: 30,
+    morning_streak_alert: true,
+    challenge_reminders: false,
+    weekly_sleep_report: true,
+  });
+
   useEffect(() => {
-    fetchProfile();
+    fetchProfileAndSettings();
   }, []);
 
   const parseTimeStringToDate = (timeStr?: string, defaultHours = 22, defaultMins = 0) => {
@@ -52,11 +66,17 @@ export default function ProfileScreen() {
     return `${hours}:${minutes}`;
   };
 
-  const fetchProfile = async () => {
+  const fetchProfileAndSettings = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get('/users/profile');
+      
+      // Fetch Profile and Notifications in parallel
+      const [profileRes, notifRes] = await Promise.all([
+        api.get('/users/profile'),
+        api.get('/notifications/preferences').catch(() => ({ data: null })) // Graceful fail if new user
+      ]);
 
+      const data = profileRes.data;
       setFullName(data.full_name || '');
       setDifficulty(data.difficulty_preference || 'medium');
       setTimezone(data.timezone || 'UTC');
@@ -68,8 +88,18 @@ export default function ProfileScreen() {
       } else {
         setPreferredChallenges([]);
       }
+
+      if (notifRes.data) {
+        setNotifPrefs({
+          bedtime_warning_enabled: notifRes.data.bedtime_warning_enabled,
+          bedtime_warning_minutes: notifRes.data.bedtime_warning_minutes,
+          morning_streak_alert: notifRes.data.morning_streak_alert,
+          challenge_reminders: notifRes.data.challenge_reminders,
+          weekly_sleep_report: notifRes.data.weekly_sleep_report,
+        });
+      }
     } catch (error) {
-      console.error('Failed to fetch profile:', error);
+      console.error('Failed to fetch data:', error);
       Alert.alert('Error', 'Could not load profile settings.');
     } finally {
       setLoading(false);
@@ -79,7 +109,7 @@ export default function ProfileScreen() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const payload = {
+      const profilePayload = {
         full_name: fullName.trim(),
         difficulty_preference: difficulty,
         timezone,
@@ -88,13 +118,51 @@ export default function ProfileScreen() {
         preferred_challenges: preferredChallenges.length > 0 ? preferredChallenges.join(',') : null,
       };
 
-      await api.put('/users/profile', payload);
-      Alert.alert('Success', 'Profile updated.');
+      // Save both endpoints
+      await Promise.all([
+        api.put('/users/profile', profilePayload),
+        api.put('/notifications/preferences', notifPrefs)
+      ]);
+      
+      Alert.alert('Success', 'Profile and preferences updated.');
     } catch (error: any) {
       console.error('Failed to save profile:', error.response?.data || error.message);
       Alert.alert('Error', 'Could not save profile changes.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const downloadReport = async (type: 'pdf' | 'excel') => {
+    try {
+      if (type === 'pdf') setDownloadingPdf(true);
+      else setDownloadingExcel(true);
+
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) throw new Error("No auth token");
+
+      const ext = type === 'pdf' ? 'pdf' : 'xlsx';
+      const fileUri = `${FileSystem.documentDirectory}sleep_report_${Date.now()}.${ext}`;
+
+      const { uri, status } = await FileSystem.downloadAsync(
+        `${api.defaults.baseURL}/reports/export/${type}`,
+        fileUri,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (status !== 200) throw new Error("Failed to generate report from server");
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri);
+      } else {
+        Alert.alert('Downloaded', `File saved to ${uri}`);
+      }
+    } catch (error: any) {
+      console.error('Download error:', error);
+      Alert.alert('Error', 'Failed to download report.');
+    } finally {
+      setDownloadingPdf(false);
+      setDownloadingExcel(false);
     }
   };
 
@@ -104,14 +172,8 @@ export default function ProfileScreen() {
     );
   };
 
-  const onChangeBedtime = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShowBedtimePicker(false);
-    if (selectedDate) setBedtime(selectedDate);
-  };
-
-  const onChangeWakeTime = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShowWakeTimePicker(false);
-    if (selectedDate) setWakeTime(selectedDate);
+  const togglePref = (key: keyof typeof notifPrefs) => {
+    setNotifPrefs(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   if (loading) {
@@ -159,7 +221,10 @@ export default function ProfileScreen() {
           value={bedtime}
           mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={onChangeBedtime}
+          onChange={(e, d) => {
+            if (Platform.OS === 'android') setShowBedtimePicker(false);
+            if (d) setBedtime(d);
+          }}
         />
       )}
 
@@ -168,9 +233,48 @@ export default function ProfileScreen() {
           value={wakeTime}
           mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={onChangeWakeTime}
+          onChange={(e, d) => {
+            if (Platform.OS === 'android') setShowWakeTimePicker(false);
+            if (d) setWakeTime(d);
+          }}
         />
       )}
+
+      {/* NEW: Notification Settings */}
+      <View style={styles.settingHeaderRow}>
+        <Bell color={colors.textHigh} size={20} />
+        <Text style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}>Notifications</Text>
+      </View>
+      
+      <View style={styles.card}>
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>Bedtime Warning</Text>
+          <Switch 
+            value={notifPrefs.bedtime_warning_enabled} 
+            onValueChange={() => togglePref('bedtime_warning_enabled')}
+            trackColor={{ false: colors.border, true: colors.accentBg }}
+            thumbColor={notifPrefs.bedtime_warning_enabled ? colors.accent : '#f4f3f4'}
+          />
+        </View>
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>Morning Streak Alert</Text>
+          <Switch 
+            value={notifPrefs.morning_streak_alert} 
+            onValueChange={() => togglePref('morning_streak_alert')}
+            trackColor={{ false: colors.border, true: colors.accentBg }}
+            thumbColor={notifPrefs.morning_streak_alert ? colors.accent : '#f4f3f4'}
+          />
+        </View>
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>Weekly Sleep Report</Text>
+          <Switch 
+            value={notifPrefs.weekly_sleep_report} 
+            onValueChange={() => togglePref('weekly_sleep_report')}
+            trackColor={{ false: colors.border, true: colors.accentBg }}
+            thumbColor={notifPrefs.weekly_sleep_report ? colors.accent : '#f4f3f4'}
+          />
+        </View>
+      </View>
 
       <Text style={styles.sectionTitle}>Difficulty Preference</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
@@ -226,6 +330,43 @@ export default function ProfileScreen() {
       <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.7 }]} onPress={handleSave} disabled={saving}>
         <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Profile'}</Text>
       </TouchableOpacity>
+
+      {/* NEW: Reports & Exports Section */}
+      <Text style={[styles.sectionTitle, { marginTop: 40 }]}>Data Exports</Text>
+      <Text style={styles.subText}>Download your complete sleep and habit history</Text>
+      
+      <View style={styles.exportRow}>
+        <TouchableOpacity 
+          style={styles.exportBtn} 
+          onPress={() => downloadReport('pdf')}
+          disabled={downloadingPdf}
+        >
+          {downloadingPdf ? (
+            <ActivityIndicator size="small" color={colors.accent} />
+          ) : (
+            <>
+              <FileText color={colors.accent} size={20} />
+              <Text style={styles.exportBtnText}>Export PDF</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.exportBtn} 
+          onPress={() => downloadReport('excel')}
+          disabled={downloadingExcel}
+        >
+          {downloadingExcel ? (
+            <ActivityIndicator size="small" color={colors.accent} />
+          ) : (
+            <>
+              <Download color={colors.accent} size={20} />
+              <Text style={styles.exportBtnText}>Export Excel</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
     </ScrollView>
   );
 }
@@ -261,6 +402,32 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   timeText: { color: colors.textHigh, fontSize: 18, fontWeight: '700' },
+
+  settingHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.xl, marginBottom: spacing.sm },
+  card: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 },
+  switchLabel: { color: colors.textHigh, fontSize: 16, fontWeight: '500' },
+
+  exportRow: { flexDirection: 'row', gap: 15, marginTop: 10, marginBottom: 20 },
+  exportBtn: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    padding: 15,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.accentBorder,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  exportBtnText: { color: colors.accent, fontSize: 14, fontWeight: '600' },
 
   chipScroll: { maxHeight: 50, marginBottom: 10 },
   chip: {
