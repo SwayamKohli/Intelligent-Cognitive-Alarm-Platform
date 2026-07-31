@@ -55,7 +55,7 @@
       ]
     ],
     "extra": {
-      "apiBaseUrl": "https://cognitive-alarm-sk.duckdns.org"
+      "apiBaseUrl": "http://10.104.17.172:8000"
     }
   }
 }
