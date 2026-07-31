@@ -318,7 +318,6 @@ async def export_pdf_report(
 
     # Section 4: AI Recommendations Summary
     story.append(Paragraph("4. Personalized Recommendation Summary", section_title))
-    
     def extract_rec(key):
         val = recommendations.get(key, "N/A")
         if isinstance(val, dict):
