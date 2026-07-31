@@ -54,7 +54,7 @@ def _calculate_sleep_duration(bedtime: Optional[time], wake_time: Optional[time]
 @router.get("/export/pdf")
 async def export_pdf_report(
     user_id: Optional[str] = None,
-    current_user: User = Depends(get_current_user), 
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -63,7 +63,7 @@ async def export_pdf_report(
     """
     target_user = current_user
 
-   # If a specific user_id is requested, verify permissions and fetch them
+    # If a specific user_id is requested, verify permissions and fetch them
     if user_id and user_id != str(current_user.id):
         if str(current_user.role).lower() not in ["userrole.admin", "userrole.coach", "admin", "coach", "wellness_coach", "userrole.wellness_coach"]:
             raise HTTPException(status_code=403, detail="Not authorized to pull other user reports.")
@@ -388,7 +388,7 @@ async def export_pdf_report(
 @router.get("/export/excel")
 async def export_excel_report(
     user_id: Optional[str] = None,
-    current_user: User = Depends(get_current_user), 
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
