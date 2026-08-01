@@ -27,7 +27,13 @@ const NAV_ITEMS = [
 ];
 
 const AVAILABLE_CHALLENGES = [
-  "math", "memory", "pattern", "logic", "word_scramble", "riddle", "quiz",
+  "math",
+  "memory",
+  "pattern",
+  "logic",
+  "word_scramble",
+  "riddle",
+  "quiz",
 ];
 
 function ToggleSwitch({ checked, onChange, label, disabled = false }) {
@@ -40,7 +46,10 @@ function ToggleSwitch({ checked, onChange, label, disabled = false }) {
         onClick={() => onChange(!checked)}
         aria-pressed={checked}
         disabled={disabled}
-        style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}
+        style={{
+          opacity: disabled ? 0.5 : 1,
+          cursor: disabled ? "not-allowed" : "pointer",
+        }}
       >
         <span className="toggle-switch-thumb" />
       </button>
@@ -78,19 +87,21 @@ function Dashboard() {
   const [profileDifficulty, setProfileDifficulty] = useState("medium");
   const [targetBedtime, setTargetBedtime] = useState("22:00");
   const [targetWakeTime, setTargetWakeTime] = useState("06:00");
-  const [globalPreferredChallenges, setGlobalPreferredChallenges] = useState([]);
+  const [globalPreferredChallenges, setGlobalPreferredChallenges] = useState(
+    [],
+  );
   const [savingProfile, setSavingProfile] = useState(false);
   const [toast, setToast] = useState(null);
   const [habitScore, setHabitScore] = useState(null);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [recommendations, setRecommendations] = useState({
-  sleep: "",
-  wake_up: "",
-  habit: "",
-  productivity: "",
-});
+    sleep: "",
+    wake_up: "",
+    habit: "",
+    productivity: "",
+  });
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-  
+
   // Added fcm_enabled to local state
   const [fcmEnabled, setFcmEnabled] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({
@@ -127,7 +138,7 @@ function Dashboard() {
     }
   };
 
- const fetchHabitScore = async () => {
+  const fetchHabitScore = async () => {
     setLoadingAnalytics(true);
     try {
       // ?t=${Date.now()} forces the browser to bypass its local HTTP cache
@@ -143,13 +154,15 @@ function Dashboard() {
   const fetchRecommendations = async () => {
     try {
       // ?t=${Date.now()} forces the browser to bypass its local HTTP cache
-      const { data } = await api.get(`/analytics/recommendations?t=${Date.now()}`);
-      
+      const { data } = await api.get(
+        `/analytics/recommendations?t=${Date.now()}`,
+      );
+
       const safeExtract = (item) => {
-        if (typeof item === 'object' && item !== null) {
+        if (typeof item === "object" && item !== null) {
           return item.advice || JSON.stringify(item);
         }
-        return typeof item === 'string' ? item : 'No suggestions available.';
+        return typeof item === "string" ? item : "No suggestions available.";
       };
 
       setRecommendations({
@@ -219,7 +232,7 @@ function Dashboard() {
     setGlobalPreferredChallenges((prev) =>
       prev.includes(challenge)
         ? prev.filter((c) => c !== challenge)
-        : [...prev, challenge]
+        : [...prev, challenge],
     );
   };
 
@@ -285,7 +298,7 @@ function Dashboard() {
         try {
           await api.post("/notifications/fcm-token", {
             fcm_token: token,
-            device_type: "web"
+            device_type: "web",
           });
           setFcmEnabled(true);
           showToast("Push notifications enabled!");
@@ -297,7 +310,7 @@ function Dashboard() {
         showToast("Permission denied by browser.", "error");
       }
     } else {
-      // If turning off, we would ideally revoke the token on the backend, 
+      // If turning off, we would ideally revoke the token on the backend,
       // but for now we just visually disable it.
       setFcmEnabled(false);
       showToast("Push notifications disabled.");
@@ -313,7 +326,7 @@ function Dashboard() {
   const fetchChallenge = async (alarmId) => {
     try {
       const { data } = await api.get(
-        `/challenges/next?alarm_id=${alarmId}&challenge_type=random`
+        `/challenges/next?alarm_id=${alarmId}&challenge_type=random`,
       );
       setCurrentChallenge(data);
       setCurrentAlarmId(alarmId);
@@ -346,7 +359,9 @@ function Dashboard() {
   const handleDownloadPdf = async () => {
     setDownloadingPdf(true);
     try {
-      const response = await api.get("/reports/export/pdf", { responseType: "blob" });
+      const response = await api.get("/reports/export/pdf", {
+        responseType: "blob",
+      });
       triggerDownload(new Blob([response.data]), "Sleep_Report.pdf");
     } catch (error) {
       console.error(error);
@@ -359,7 +374,9 @@ function Dashboard() {
   const handleExportExcel = async () => {
     setDownloadingExcel(true);
     try {
-      const response = await api.get("/reports/export/excel", { responseType: "blob" });
+      const response = await api.get("/reports/export/excel", {
+        responseType: "blob",
+      });
       triggerDownload(new Blob([response.data]), "Telemetry_Report.xlsx");
     } catch (error) {
       console.error(error);
@@ -375,7 +392,10 @@ function Dashboard() {
     .filter((a) => a.is_active)
     .sort((a, b) => a.time.localeCompare(b.time))[0];
 
-  const clockString = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const clockString = now.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   const dateString = now.toLocaleDateString([], {
     weekday: "long",
     month: "long",
@@ -418,7 +438,9 @@ function Dashboard() {
               return (
                 <button
                   key={item.key}
-                  className={activeTab === item.key ? "nav-btn active" : "nav-btn"}
+                  className={
+                    activeTab === item.key ? "nav-btn active" : "nav-btn"
+                  }
                   onClick={() => setActiveTab(item.key)}
                 >
                   <span className="nav-icon">
@@ -471,8 +493,10 @@ function Dashboard() {
                       </h2>
                       <p>
                         You are currently on a{" "}
-                        <span className="highlight-text">{currentStreak}-day</span> wake-up
-                        streak.{" "}
+                        <span className="highlight-text">
+                          {currentStreak}-day
+                        </span>{" "}
+                        wake-up streak.{" "}
                         {currentStreak > 2
                           ? "You're building incredible momentum."
                           : "Let's build that momentum."}
@@ -491,7 +515,9 @@ function Dashboard() {
                   {nextAlarm ? (
                     <>
                       <div className="next-alarm-display">
-                        <div className="next-alarm-time">{nextAlarm.time.slice(0, 5)}</div>
+                        <div className="next-alarm-time">
+                          {nextAlarm.time.slice(0, 5)}
+                        </div>
                         <div className="next-alarm-details">
                           <p>{nextAlarm.label}</p>
                           <span className="widget-subtext">
@@ -507,14 +533,19 @@ function Dashboard() {
                           disabled={togglingAlarmId === nextAlarm.id}
                           onClick={() => handleQuickSnooze(nextAlarm)}
                         >
-                          {togglingAlarmId === nextAlarm.id ? "Snoozing…" : "Snooze"}
+                          {togglingAlarmId === nextAlarm.id
+                            ? "Snoozing…"
+                            : "Snooze"}
                         </button>
                       </div>
                     </>
                   ) : (
-                     <div className="widget-value" style={{ fontSize: "20px", color: "var(--text-dim)" }}>
-                       No alarms set
-                     </div>
+                    <div
+                      className="widget-value"
+                      style={{ fontSize: "20px", color: "var(--text-dim)" }}
+                    >
+                      No alarms set
+                    </div>
                   )}
                 </div>
 
@@ -522,7 +553,12 @@ function Dashboard() {
                   <h3>Habit Pulse</h3>
                   <div className="widget-value">
                     {Math.round(score)}
-                    <span className="widget-value-suffix" style={{fontSize: '18px', color: 'var(--text-dim)'}}>/100</span>
+                    <span
+                      className="widget-value-suffix"
+                      style={{ fontSize: "18px", color: "var(--text-dim)" }}
+                    >
+                      /100
+                    </span>
                   </div>
                   <p className="widget-subtext">Overall adherence score</p>
                 </div>
@@ -570,7 +606,9 @@ function Dashboard() {
                     >
                       <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
                       <option value="UTC">UTC</option>
-                      <option value="America/New_York">America/New_York (EST)</option>
+                      <option value="America/New_York">
+                        America/New_York (EST)
+                      </option>
                       <option value="Europe/London">Europe/London (GMT)</option>
                     </select>
                   </div>
@@ -597,10 +635,13 @@ function Dashboard() {
 
                 <div className="field-group">
                   <label>Global Allowed Challenges</label>
-                  <p className="field-hint">Leave blank to allow all challenge types</p>
+                  <p className="field-hint">
+                    Leave blank to allow all challenge types
+                  </p>
                   <div className="chip-grid">
                     {AVAILABLE_CHALLENGES.map((challenge) => {
-                      const active = globalPreferredChallenges.includes(challenge);
+                      const active =
+                        globalPreferredChallenges.includes(challenge);
                       return (
                         <motion.button
                           type="button"
@@ -627,46 +668,65 @@ function Dashboard() {
 
                 <div className="glass-card notification-card">
                   <h3>Notification Preferences</h3>
-                  
+
                   {/* NEW MASTER TOGGLE FOR PUSH NOTIFICATIONS */}
-                  <div style={{ marginBottom: "16px", paddingBottom: "16px", borderBottom: "1px solid var(--border)" }}>
-                     <ToggleSwitch
-                        label="Enable Browser Push Notifications (FCM)"
-                        checked={fcmEnabled}
-                        onChange={handleFcmToggle}
-                      />
+                  <div
+                    style={{
+                      marginBottom: "16px",
+                      paddingBottom: "16px",
+                      borderBottom: "1px solid var(--border)",
+                    }}
+                  >
+                    <ToggleSwitch
+                      label="Enable Browser Push Notifications (FCM)"
+                      checked={fcmEnabled}
+                      onChange={handleFcmToggle}
+                    />
                   </div>
 
                   <ToggleSwitch
                     label="Bedtime warning"
                     checked={notificationSettings.bedtime_warning_enabled}
                     onChange={(val) =>
-                      setNotificationSettings((prev) => ({ ...prev, bedtime_warning_enabled: val }))
+                      setNotificationSettings((prev) => ({
+                        ...prev,
+                        bedtime_warning_enabled: val,
+                      }))
                     }
                   />
 
                   {notificationSettings.bedtime_warning_enabled && (
                     <div className="minutes-row">
-                      <span className="toggle-pref-label">Warn me before bedtime</span>
+                      <span className="toggle-pref-label">
+                        Warn me before bedtime
+                      </span>
                       <div className="minutes-stepper">
                         <button
                           type="button"
                           onClick={() =>
                             setNotificationSettings((prev) => ({
                               ...prev,
-                              bedtime_warning_minutes: Math.max(5, prev.bedtime_warning_minutes - 5),
+                              bedtime_warning_minutes: Math.max(
+                                5,
+                                prev.bedtime_warning_minutes - 5,
+                              ),
                             }))
                           }
                         >
                           −
                         </button>
-                        <span>{notificationSettings.bedtime_warning_minutes} min</span>
+                        <span>
+                          {notificationSettings.bedtime_warning_minutes} min
+                        </span>
                         <button
                           type="button"
                           onClick={() =>
                             setNotificationSettings((prev) => ({
                               ...prev,
-                              bedtime_warning_minutes: Math.min(120, prev.bedtime_warning_minutes + 5),
+                              bedtime_warning_minutes: Math.min(
+                                120,
+                                prev.bedtime_warning_minutes + 5,
+                              ),
                             }))
                           }
                         >
@@ -680,7 +740,10 @@ function Dashboard() {
                     label="Morning streak alerts"
                     checked={notificationSettings.morning_streak_alert}
                     onChange={(val) =>
-                      setNotificationSettings((prev) => ({ ...prev, morning_streak_alert: val }))
+                      setNotificationSettings((prev) => ({
+                        ...prev,
+                        morning_streak_alert: val,
+                      }))
                     }
                   />
 
@@ -688,7 +751,10 @@ function Dashboard() {
                     label="Challenge reminders"
                     checked={notificationSettings.challenge_reminders}
                     onChange={(val) =>
-                      setNotificationSettings((prev) => ({ ...prev, challenge_reminders: val }))
+                      setNotificationSettings((prev) => ({
+                        ...prev,
+                        challenge_reminders: val,
+                      }))
                     }
                   />
 
@@ -696,7 +762,10 @@ function Dashboard() {
                     label="Weekly sleep report"
                     checked={notificationSettings.weekly_sleep_report}
                     onChange={(val) =>
-                      setNotificationSettings((prev) => ({ ...prev, weekly_sleep_report: val }))
+                      setNotificationSettings((prev) => ({
+                        ...prev,
+                        weekly_sleep_report: val,
+                      }))
                     }
                   />
 
@@ -707,7 +776,9 @@ function Dashboard() {
                     whileTap={{ scale: 0.97 }}
                     style={{ marginTop: "16px" }}
                   >
-                    {savingNotifications ? "Saving…" : "Save Notification Settings"}
+                    {savingNotifications
+                      ? "Saving…"
+                      : "Save Notification Settings"}
                   </motion.button>
                 </div>
               </motion.div>
@@ -741,10 +812,14 @@ function Dashboard() {
                         whileHover={{ y: -2 }}
                       >
                         <div className="alarm-info">
-                          <span className={`alarm-dot ${alarm.is_active ? "on" : "off"}`} />
+                          <span
+                            className={`alarm-dot ${alarm.is_active ? "on" : "off"}`}
+                          />
                           <div>
                             <strong>{alarm.label}</strong>
-                            <p>{alarm.time?.slice(0, 5)} · {alarm.alarm_type}</p>
+                            <p>
+                              {alarm.time?.slice(0, 5)} · {alarm.alarm_type}
+                            </p>
                           </div>
                         </div>
                         <div className="alarm-actions">
@@ -808,7 +883,10 @@ function Dashboard() {
                       recommendations={recommendations}
                     />
 
-                    <div className="analytics-section" style={{ marginTop: "32px" }}>
+                    <div
+                      className="analytics-section"
+                      style={{ marginTop: "32px" }}
+                    >
                       <h3>Reports & Exports</h3>
 
                       <div className="export-row">
@@ -819,7 +897,9 @@ function Dashboard() {
                           whileTap={{ scale: 0.97 }}
                         >
                           <FileText size={16} />
-                          {downloadingPdf ? "Preparing…" : "Download PDF Report"}
+                          {downloadingPdf
+                            ? "Preparing…"
+                            : "Download PDF Report"}
                         </motion.button>
 
                         <motion.button
@@ -829,7 +909,9 @@ function Dashboard() {
                           whileTap={{ scale: 0.97 }}
                         >
                           <Sheet size={16} />
-                          {downloadingExcel ? "Preparing…" : "Export Excel Telemetry"}
+                          {downloadingExcel
+                            ? "Preparing…"
+                            : "Export Excel Telemetry"}
                         </motion.button>
                       </div>
                     </div>

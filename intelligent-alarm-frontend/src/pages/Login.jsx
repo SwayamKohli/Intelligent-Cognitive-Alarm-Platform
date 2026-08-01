@@ -65,10 +65,10 @@ function Login() {
     setErrorMsg("");
     setLoading(true);
     try {
-      // Decode the token locally to grab basic details if needed, 
+      // Decode the token locally to grab basic details if needed,
       // but send the raw token to the backend for secure validation
       const decoded = jwtDecode(credentialResponse.credential);
-      
+
       const payload = {
         token: credentialResponse.credential,
         email: decoded.email,
@@ -110,7 +110,9 @@ function Login() {
         </motion.div>
 
         <h1 className="auth-title">Welcome back</h1>
-        <p className="auth-subtitle">Sign in to your Cognitive Alarm Platform</p>
+        <p className="auth-subtitle">
+          Sign in to your Cognitive Alarm Platform
+        </p>
 
         <motion.div
           className="glass-card auth-form"
@@ -159,13 +161,13 @@ function Login() {
           >
             {loading ? "Signing in…" : "Login"}
           </motion.button>
-          
+
           <div className="divider">
             <span>OR</span>
           </div>
 
           <div className="google-auth-wrapper">
-             <GoogleLogin
+            <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={() => setErrorMsg("Google login failed")}
               useOneTap

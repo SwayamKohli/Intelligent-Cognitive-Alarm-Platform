@@ -10,7 +10,9 @@ function AuthWaveBackground() {
       >
         <motion.path
           fill="rgba(244, 197, 66, 0.05)"
-          initial={{ d: "M0,160 C320,220 420,100 720,140 C1020,180 1120,80 1440,140 L1440,320 L0,320 Z" }}
+          initial={{
+            d: "M0,160 C320,220 420,100 720,140 C1020,180 1120,80 1440,140 L1440,320 L0,320 Z",
+          }}
           animate={{
             d: [
               "M0,160 C320,220 420,100 720,140 C1020,180 1120,80 1440,140 L1440,320 L0,320 Z",
@@ -28,7 +30,9 @@ function AuthWaveBackground() {
       >
         <motion.path
           fill="rgba(184, 134, 43, 0.06)"
-          initial={{ d: "M0,220 C300,260 480,180 760,200 C1040,220 1200,260 1440,220 L1440,320 L0,320 Z" }}
+          initial={{
+            d: "M0,220 C300,260 480,180 760,200 C1040,220 1200,260 1440,220 L1440,320 L0,320 Z",
+          }}
           animate={{
             d: [
               "M0,220 C300,260 480,180 760,200 C1040,220 1200,260 1440,220 L1440,320 L0,320 Z",
@@ -36,7 +40,12 @@ function AuthWaveBackground() {
               "M0,220 C300,260 480,180 760,200 C1040,220 1200,260 1440,220 L1440,320 L0,320 Z",
             ],
           }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0.5,
+          }}
         />
       </svg>
     </div>

@@ -44,7 +44,10 @@ function CoachDashboard() {
       const response = await api.get(`/reports/export/pdf?user_id=${userId}`, {
         responseType: "blob",
       });
-      triggerDownload(new Blob([response.data]), `${userName}_Sleep_Report.pdf`);
+      triggerDownload(
+        new Blob([response.data]),
+        `${userName}_Sleep_Report.pdf`,
+      );
     } catch (error) {
       console.error(error);
     } finally {
@@ -55,9 +58,12 @@ function CoachDashboard() {
   const handleExportExcel = async (userId, userName) => {
     setDownloadingId(`${userId}-excel`);
     try {
-      const response = await api.get(`/reports/export/excel?user_id=${userId}`, {
-        responseType: "blob",
-      });
+      const response = await api.get(
+        `/reports/export/excel?user_id=${userId}`,
+        {
+          responseType: "blob",
+        },
+      );
       triggerDownload(new Blob([response.data]), `${userName}_Telemetry.xlsx`);
     } catch (error) {
       console.error(error);
@@ -92,7 +98,9 @@ function CoachDashboard() {
         >
           Coach Dashboard
         </motion.h1>
-        <p className="coach-subtitle">Assigned users and their habit adherence</p>
+        <p className="coach-subtitle">
+          Assigned users and their habit adherence
+        </p>
 
         <motion.div
           className="glass-card coach-panel"
@@ -116,7 +124,11 @@ function CoachDashboard() {
                 <span>Reports</span>
               </div>
 
-              <motion.div variants={staggerContainer} initial="initial" animate="animate">
+              <motion.div
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+              >
                 {users.map((user) => {
                   const score = user.habit_score ?? 0;
                   const name = user.full_name || "User";
@@ -133,9 +145,13 @@ function CoachDashboard() {
                       </span>
                       <span className="user-email">{user.email}</span>
                       <span>
-                        {user.bedtime ? `${user.bedtime} – ${user.wake_time}` : "Not set"}
+                        {user.bedtime
+                          ? `${user.bedtime} – ${user.wake_time}`
+                          : "Not set"}
                       </span>
-                      <span className={`rate-badge ${scoreTier(score)}`}>{score}%</span>
+                      <span className={`rate-badge ${scoreTier(score)}`}>
+                        {score}%
+                      </span>
 
                       <span className="report-actions">
                         <button

@@ -30,12 +30,13 @@
   --code-bg: #17171a;
   --social-bg: rgba(255, 255, 255, 0.04);
 
-  --shadow: rgba(0, 0, 0, 0.5) 0 10px 30px -5px, rgba(0, 0, 0, 0.3) 0 4px 6px -2px;
+  --shadow:
+    rgba(0, 0, 0, 0.5) 0 10px 30px -5px, rgba(0, 0, 0, 0.3) 0 4px 6px -2px;
   --shadow-glow: 0 0 40px -10px var(--accent-glow);
 
-  --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, 'SF Mono', Consolas, monospace;
+  --sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  --heading: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Consolas, monospace;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
@@ -60,8 +61,16 @@ body {
   margin: 0;
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(244, 197, 66, 0.08), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(184, 134, 43, 0.06), transparent);
+    radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      rgba(244, 197, 66, 0.08),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 100% 100%,
+      rgba(184, 134, 43, 0.06),
+      transparent
+    );
   background-attachment: fixed;
   min-height: 100svh;
 }
@@ -75,7 +84,9 @@ body {
   box-sizing: border-box;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: var(--heading);
   font-weight: 600;
   color: var(--text-h);
@@ -169,7 +180,9 @@ code {
   cursor: pointer;
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
   font-family: var(--sans);
   color: var(--text-h);
   background: rgba(255, 255, 255, 0.03);
@@ -179,7 +192,9 @@ input, select, textarea {
   font-size: 15px;
   outline: none;
 }
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
   border-color: var(--accent-border);
   box-shadow: 0 0 0 3px var(--accent-bg);
 }

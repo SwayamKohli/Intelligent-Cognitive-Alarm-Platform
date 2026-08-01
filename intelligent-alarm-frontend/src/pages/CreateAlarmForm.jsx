@@ -4,7 +4,13 @@ import api from "../lib/api";
 import { staggerContainer, staggerItem } from "../lib/motion";
 
 const AVAILABLE_CHALLENGES = [
-  "math", "memory", "pattern", "logic", "word_scramble", "riddle", "quiz",
+  "math",
+  "memory",
+  "pattern",
+  "logic",
+  "word_scramble",
+  "riddle",
+  "quiz",
 ];
 
 const ALARM_TYPES = [
@@ -31,7 +37,7 @@ function CreateAlarmForm({ onAlarmCreated }) {
     setPreferredChallenges((prev) =>
       prev.includes(challenge)
         ? prev.filter((c) => c !== challenge)
-        : [...prev, challenge]
+        : [...prev, challenge],
     );
   };
 
@@ -72,7 +78,7 @@ function CreateAlarmForm({ onAlarmCreated }) {
       console.error(error);
       const detail = error.response?.data?.detail;
       setErrorMsg(
-        typeof detail === "string" ? detail : "Failed to create alarm."
+        typeof detail === "string" ? detail : "Failed to create alarm.",
       );
     } finally {
       setSubmitting(false);
@@ -111,16 +117,25 @@ function CreateAlarmForm({ onAlarmCreated }) {
 
         <div className="field-group">
           <label>Alarm Type</label>
-          <select value={alarmType} onChange={(e) => setAlarmType(e.target.value)}>
+          <select
+            value={alarmType}
+            onChange={(e) => setAlarmType(e.target.value)}
+          >
             {ALARM_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
             ))}
           </select>
-           {alarmType === "smart_adaptive" && (
-             <p className="field-hint" style={{ color: 'var(--accent)', marginTop: '4px' }}>
-               Alarm time will shift slightly based on your recent fatigue scores.
-             </p>
-           )}
+          {alarmType === "smart_adaptive" && (
+            <p
+              className="field-hint"
+              style={{ color: "var(--accent)", marginTop: "4px" }}
+            >
+              Alarm time will shift slightly based on your recent fatigue
+              scores.
+            </p>
+          )}
         </div>
       </div>
 

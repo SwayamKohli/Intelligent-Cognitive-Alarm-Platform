@@ -109,7 +109,7 @@
 
 .divider::before,
 .divider::after {
-  content: '';
+  content: "";
   flex: 1;
   border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));
 }

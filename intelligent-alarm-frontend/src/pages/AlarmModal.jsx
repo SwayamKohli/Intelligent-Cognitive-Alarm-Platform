@@ -25,7 +25,9 @@ function AlarmModal({ challenge: initialChallenge, alarmId, onClose }) {
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.loop = true;
-      audioRef.current.play().catch((err) => console.log("Autoplay blocked:", err));
+      audioRef.current
+        .play()
+        .catch((err) => console.log("Autoplay blocked:", err));
     }
     return () => {
       if (audioRef.current) {
@@ -69,13 +71,16 @@ function AlarmModal({ challenge: initialChallenge, alarmId, onClose }) {
     setLoadingNext(true);
     try {
       const { data } = await api.get(
-        `/challenges/next?alarm_id=${alarmId}&challenge_type=random`
+        `/challenges/next?alarm_id=${alarmId}&challenge_type=random`,
       );
       setChallenge(data);
       setAnswer("");
     } catch (error) {
       console.log(error);
-      setFeedback({ type: "error", message: "Couldn't load the next challenge." });
+      setFeedback({
+        type: "error",
+        message: "Couldn't load the next challenge.",
+      });
     } finally {
       setLoadingNext(false);
     }
@@ -101,7 +106,10 @@ function AlarmModal({ challenge: initialChallenge, alarmId, onClose }) {
       }
 
       if (data.dismiss_alarm) {
-        setFeedback({ type: "success", message: "Alarm dismissed. Great job!" });
+        setFeedback({
+          type: "success",
+          message: "Alarm dismissed. Great job!",
+        });
         stopAudio();
         setTimeout(() => onClose(), 900);
         return;
@@ -115,7 +123,10 @@ function AlarmModal({ challenge: initialChallenge, alarmId, onClose }) {
       await fetchNextChallenge();
     } catch (error) {
       console.log(error);
-      setFeedback({ type: "error", message: "Server error — please try again." });
+      setFeedback({
+        type: "error",
+        message: "Server error — please try again.",
+      });
       setSubmitting(false);
     }
   };
@@ -132,7 +143,10 @@ function AlarmModal({ challenge: initialChallenge, alarmId, onClose }) {
     } catch (error) {
       console.log(error);
       setSnoozeBlocked(true);
-      setFeedback({ type: "error", message: "Snooze limit reached — solve the challenge instead." });
+      setFeedback({
+        type: "error",
+        message: "Snooze limit reached — solve the challenge instead.",
+      });
       setSnoozing(false);
     }
   };
@@ -144,7 +158,9 @@ function AlarmModal({ challenge: initialChallenge, alarmId, onClose }) {
   const renderChallenge = () => {
     switch (challenge?.challenge_type) {
       case "math":
-        return <h2 className="challenge-prompt">{challenge?.content?.prompt}</h2>;
+        return (
+          <h2 className="challenge-prompt">{challenge?.content?.prompt}</h2>
+        );
 
       case "memory":
         return (
@@ -176,18 +192,24 @@ function AlarmModal({ challenge: initialChallenge, alarmId, onClose }) {
         );
 
       case "pattern":
-        return <h2 className="challenge-prompt">{challenge?.content?.prompt}</h2>;
+        return (
+          <h2 className="challenge-prompt">{challenge?.content?.prompt}</h2>
+        );
 
       case "word_scramble":
         return (
           <div>
             <h2 className="challenge-prompt">{challenge?.content?.prompt}</h2>
-            <h1 className="scrambled-word">{challenge?.content?.scrambled_word}</h1>
+            <h1 className="scrambled-word">
+              {challenge?.content?.scrambled_word}
+            </h1>
           </div>
         );
 
       default:
-        return <h2 className="challenge-prompt">{challenge?.content?.prompt}</h2>;
+        return (
+          <h2 className="challenge-prompt">{challenge?.content?.prompt}</h2>
+        );
     }
   };
 
@@ -228,7 +250,9 @@ function AlarmModal({ challenge: initialChallenge, alarmId, onClose }) {
           {timeLeft}s
         </div>
 
-        <p className="alarm-instruction">Solve the challenge to stop the alarm.</p>
+        <p className="alarm-instruction">
+          Solve the challenge to stop the alarm.
+        </p>
 
         <div className="progress-container">
           <motion.div
@@ -239,7 +263,8 @@ function AlarmModal({ challenge: initialChallenge, alarmId, onClose }) {
           />
         </div>
         <p className="streak-label">
-          {challenge?.streak_state?.current ?? 0} / {challenge?.streak_state?.target ?? "-"} challenges completed
+          {challenge?.streak_state?.current ?? 0} /{" "}
+          {challenge?.streak_state?.target ?? "-"} challenges completed
         </p>
 
         <motion.div
