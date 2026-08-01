@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, 
 import { LogOut, Plus, Play, Trash2 } from 'lucide-react-native';
 import api from '../lib/api';
 import * as SecureStore from 'expo-secure-store';
+import { cancelNativeAlarm } from '../lib/notifications';
 import { colors, radius, spacing, typography } from '../theme';
 
 export default function DashboardScreen({ navigation }: any) {
@@ -58,6 +59,7 @@ export default function DashboardScreen({ navigation }: any) {
   const handleDelete = async (alarmId: string) => {
     try {
       await api.delete(`/alarms/${alarmId}`);
+      await cancelNativeAlarm(alarmId);
       setAlarms((prev) => prev.filter((a) => a.id !== alarmId));
     } catch (error) {
       console.error('Failed to delete:', error);

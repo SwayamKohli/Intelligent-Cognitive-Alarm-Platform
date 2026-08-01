@@ -240,35 +240,78 @@ export default function ProfileScreen() {
         />
       )}
 
-      {/* NEW: Notification Settings */}
+      {/* Notification Settings */}
       <View style={styles.settingHeaderRow}>
         <Bell color={colors.textHigh} size={20} />
         <Text style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}>Notifications</Text>
       </View>
-      
+
       <View style={styles.card}>
         <View style={styles.switchRow}>
           <Text style={styles.switchLabel}>Bedtime Warning</Text>
-          <Switch 
-            value={notifPrefs.bedtime_warning_enabled} 
+          <Switch
+            value={notifPrefs.bedtime_warning_enabled}
             onValueChange={() => togglePref('bedtime_warning_enabled')}
             trackColor={{ false: colors.border, true: colors.accentBg }}
             thumbColor={notifPrefs.bedtime_warning_enabled ? colors.accent : '#f4f3f4'}
           />
         </View>
+
+        {notifPrefs.bedtime_warning_enabled && (
+          <View style={styles.minutesRow}>
+            <Text style={styles.minutesLabel}>Warn me before bedtime</Text>
+            <View style={styles.stepper}>
+              <TouchableOpacity
+                style={styles.stepperBtn}
+                onPress={() =>
+                  setNotifPrefs((prev) => ({
+                    ...prev,
+                    bedtime_warning_minutes: Math.max(5, prev.bedtime_warning_minutes - 5),
+                  }))
+                }
+              >
+                <Text style={styles.stepperBtnText}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.stepperValue}>{notifPrefs.bedtime_warning_minutes} min</Text>
+              <TouchableOpacity
+                style={styles.stepperBtn}
+                onPress={() =>
+                  setNotifPrefs((prev) => ({
+                    ...prev,
+                    bedtime_warning_minutes: Math.min(120, prev.bedtime_warning_minutes + 5),
+                  }))
+                }
+              >
+                <Text style={styles.stepperBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        <View style={styles.divider} />
+
         <View style={styles.switchRow}>
           <Text style={styles.switchLabel}>Morning Streak Alert</Text>
-          <Switch 
-            value={notifPrefs.morning_streak_alert} 
+          <Switch
+            value={notifPrefs.morning_streak_alert}
             onValueChange={() => togglePref('morning_streak_alert')}
             trackColor={{ false: colors.border, true: colors.accentBg }}
             thumbColor={notifPrefs.morning_streak_alert ? colors.accent : '#f4f3f4'}
           />
         </View>
         <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>Challenge Reminders</Text>
+          <Switch
+            value={notifPrefs.challenge_reminders}
+            onValueChange={() => togglePref('challenge_reminders')}
+            trackColor={{ false: colors.border, true: colors.accentBg }}
+            thumbColor={notifPrefs.challenge_reminders ? colors.accent : '#f4f3f4'}
+          />
+        </View>
+        <View style={styles.switchRow}>
           <Text style={styles.switchLabel}>Weekly Sleep Report</Text>
-          <Switch 
-            value={notifPrefs.weekly_sleep_report} 
+          <Switch
+            value={notifPrefs.weekly_sleep_report}
             onValueChange={() => togglePref('weekly_sleep_report')}
             trackColor={{ false: colors.border, true: colors.accentBg }}
             thumbColor={notifPrefs.weekly_sleep_report ? colors.accent : '#f4f3f4'}
@@ -462,4 +505,33 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   saveBtnText: { color: '#0A0A0B', fontSize: 16, fontWeight: '700' },
+  minutesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  minutesLabel: { color: colors.text, fontSize: 14 },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  stepperBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.accentBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperBtnText: { color: colors.accent, fontSize: 16, fontWeight: '700', lineHeight: 18 },
+  stepperValue: { color: colors.textHigh, fontSize: 13, fontWeight: '700', minWidth: 52, textAlign: 'center' },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 6 },
 });

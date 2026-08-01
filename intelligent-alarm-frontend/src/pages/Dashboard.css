@@ -647,6 +647,124 @@
   }
 }
 
+/* Notification preferences card */
+.notification-card {
+  margin-top: 24px;
+  padding: 24px;
+}
+
+.notification-card h3 {
+  color: var(--text-h);
+  font-size: 15px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.toggle-pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.toggle-pref-row:last-of-type {
+  border-bottom: none;
+}
+
+.toggle-pref-label {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle-switch.on {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+.toggle-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.toggle-switch.on .toggle-switch-thumb {
+  transform: translateX(18px);
+  background: var(--accent);
+}
+
+.minutes-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.minutes-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 6px;
+}
+
+.minutes-stepper button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.minutes-stepper span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+  min-width: 48px;
+  text-align: center;
+}
+
+/* Reports & exports */
+.export-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+}
+
 @media (max-width: 500px) {
   .breakdown-row {
     grid-template-columns: 90px 1fr 32px;

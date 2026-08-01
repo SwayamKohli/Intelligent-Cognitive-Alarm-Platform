@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { FileText, Sheet } from "lucide-react";
 import api from "../lib/api";
 import AlarmModal from "./AlarmModal";
 import CreateAlarmForm from "./CreateAlarmForm";
@@ -18,6 +19,22 @@ const AVAILABLE_CHALLENGES = [
   "math", "memory", "pattern", "logic", "word_scramble", "riddle", "quiz",
 ];
 
+function ToggleSwitch({ checked, onChange, label }) {
+  return (
+    <div className="toggle-pref-row">
+      <span className="toggle-pref-label">{label}</span>
+      <button
+        type="button"
+        className={checked ? "toggle-switch on" : "toggle-switch"}
+        onClick={() => onChange(!checked)}
+        aria-pressed={checked}
+      >
+        <span className="toggle-switch-thumb" />
+      </button>
+    </div>
+  );
+}
+
 function Dashboard() {
   const navigate = useNavigate();
 
@@ -25,6 +42,9 @@ function Dashboard() {
   const [alarms, setAlarms] = useState([]);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loadingAlarms, setLoadingAlarms] = useState(true);
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
 
   const [isAlarmRinging, setIsAlarmRinging] = useState(false);
   const [currentChallenge, setCurrentChallenge] = useState(null);
@@ -86,7 +106,7 @@ const [savingNotifications, setSavingNotifications] = useState(false);
   const fetchRecommendations = async () => {
     try {
       const { data } = await api.get("/analytics/recommendations");
-      
+
       // Safely extract the string if Groq returns a nested object
       const safeExtract = (item) => {
         if (typeof item === 'object' && item !== null) {
@@ -226,43 +246,44 @@ const [savingNotifications, setSavingNotifications] = useState(false);
     localStorage.removeItem("access_token");
     navigate("/login");
   };
+
+  const triggerDownload = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleDownloadPdf = async () => {
-  try {
-    const response = await api.get("/reports/export/pdf", {
-      responseType: "blob",
-    });
+    setDownloadingPdf(true);
+    try {
+      const response = await api.get("/reports/export/pdf", { responseType: "blob" });
+      triggerDownload(new Blob([response.data]), "Sleep_Report.pdf");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to download PDF report", "error");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "Sleep_Report.pdf");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (error) {
-    console.error(error);
-    showToast("Failed to download PDF report", "error");
-  }
-};
+  const handleExportExcel = async () => {
+    setDownloadingExcel(true);
+    try {
+      const response = await api.get("/reports/export/excel", { responseType: "blob" });
+      triggerDownload(new Blob([response.data]), "Telemetry_Report.xlsx");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to export Excel report", "error");
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
 
-const handleExportExcel = async () => {
-  try {
-    const response = await api.get("/reports/export/excel", {
-      responseType: "blob",
-    });
-
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "Telemetry_Report.xlsx");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (error) {
-    console.error(error);
-    showToast("Failed to export Excel report", "error");
-  }
-};
   const score =
   habitScore?.overall_score ?? habitScore?.score ?? 0;
 
@@ -428,100 +449,83 @@ const progress = circumference - (score / 100) * circumference;
                 >
                   {savingProfile ? "Saving…" : "Save Profile"}
                 </motion.button>
-                <div className="glass-card" style={{ marginTop: "24px" }}>
-  <h3>Notification Preferences</h3>
 
-  <div className="field-group">
-    <label>
-      <input
-        type="checkbox"
-        checked={notificationSettings.bedtime_warning_enabled}
-        onChange={(e) =>
-          setNotificationSettings({
-            ...notificationSettings,
-            bedtime_warning_enabled: e.target.checked,
-          })
-        }
-      />
-      {" "}Enable Bedtime Reminder
-    </label>
-  </div>
+                <div className="glass-card notification-card">
+                  <h3>Notification Preferences</h3>
 
-  <div className="field-group">
-    <label>Reminder Minutes Before Bedtime</label>
-    <input
-      type="number"
-      min="5"
-      max="120"
-      value={notificationSettings.bedtime_warning_minutes}
-      onChange={(e) =>
-        setNotificationSettings({
-          ...notificationSettings,
-          bedtime_warning_minutes: Number(e.target.value),
-        })
-      }
-    />
-  </div>
+                  <ToggleSwitch
+                    label="Bedtime warning"
+                    checked={notificationSettings.bedtime_warning_enabled}
+                    onChange={(val) =>
+                      setNotificationSettings((prev) => ({ ...prev, bedtime_warning_enabled: val }))
+                    }
+                  />
 
-  <div className="field-group">
-    <label>
-      <input
-        type="checkbox"
-        checked={notificationSettings.morning_streak_alert}
-        onChange={(e) =>
-          setNotificationSettings({
-            ...notificationSettings,
-            morning_streak_alert: e.target.checked,
-          })
-        }
-      />
-      {" "}Morning Streak Alerts
-    </label>
-  </div>
+                  {notificationSettings.bedtime_warning_enabled && (
+                    <div className="minutes-row">
+                      <span className="toggle-pref-label">Warn me before bedtime</span>
+                      <div className="minutes-stepper">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNotificationSettings((prev) => ({
+                              ...prev,
+                              bedtime_warning_minutes: Math.max(5, prev.bedtime_warning_minutes - 5),
+                            }))
+                          }
+                        >
+                          −
+                        </button>
+                        <span>{notificationSettings.bedtime_warning_minutes} min</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNotificationSettings((prev) => ({
+                              ...prev,
+                              bedtime_warning_minutes: Math.min(120, prev.bedtime_warning_minutes + 5),
+                            }))
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-  <div className="field-group">
-    <label>
-      <input
-        type="checkbox"
-        checked={notificationSettings.challenge_reminders}
-        onChange={(e) =>
-          setNotificationSettings({
-            ...notificationSettings,
-            challenge_reminders: e.target.checked,
-          })
-        }
-      />
-      {" "}Challenge Reminders
-    </label>
-  </div>
+                  <ToggleSwitch
+                    label="Morning streak alerts"
+                    checked={notificationSettings.morning_streak_alert}
+                    onChange={(val) =>
+                      setNotificationSettings((prev) => ({ ...prev, morning_streak_alert: val }))
+                    }
+                  />
 
-  <div className="field-group">
-    <label>
-      <input
-        type="checkbox"
-        checked={notificationSettings.weekly_sleep_report}
-        onChange={(e) =>
-          setNotificationSettings({
-            ...notificationSettings,
-            weekly_sleep_report: e.target.checked,
-          })
-        }
-      />
-      {" "}Weekly Sleep Report
-    </label>
-  </div>
+                  <ToggleSwitch
+                    label="Challenge reminders"
+                    checked={notificationSettings.challenge_reminders}
+                    onChange={(val) =>
+                      setNotificationSettings((prev) => ({ ...prev, challenge_reminders: val }))
+                    }
+                  />
 
-  <motion.button
-    className="btn-accent full-width"
-    onClick={handleSaveNotifications}
-    disabled={savingNotifications}
-    whileTap={{ scale: 0.97 }}
-  >
-    {savingNotifications
-      ? "Saving..."
-      : "Save Notification Settings"}
-  </motion.button>
-</div>
+                  <ToggleSwitch
+                    label="Weekly sleep report"
+                    checked={notificationSettings.weekly_sleep_report}
+                    onChange={(val) =>
+                      setNotificationSettings((prev) => ({ ...prev, weekly_sleep_report: val }))
+                    }
+                  />
+
+                  <motion.button
+                    className="btn-accent full-width"
+                    onClick={handleSaveNotifications}
+                    disabled={savingNotifications}
+                    whileTap={{ scale: 0.97 }}
+                    style={{ marginTop: "16px" }}
+                  >
+                    {savingNotifications ? "Saving…" : "Save Notification Settings"}
+                  </motion.button>
+                </div>
               </motion.div>
             )}
 
@@ -612,35 +616,41 @@ const progress = circumference - (score / 100) * circumference;
                 transition={{ duration: 0.35 }}
               >
                 {loadingAnalytics ? (
-  <p className="empty-state">Loading analytics...</p>
-) : (
-  <>
-  <AnalyticsPanel
-    habitScore={habitScore}
-    recommendations={recommendations}
-  />
+                  <p className="empty-state">Loading analytics...</p>
+                ) : (
+                  <>
+                    <AnalyticsPanel
+                      habitScore={habitScore}
+                      recommendations={recommendations}
+                    />
 
-  <div className="analytics-section" style={{ marginTop: "32px" }}>
-    <h3>Reports & Exports</h3>
+                    <div className="analytics-section" style={{ marginTop: "32px" }}>
+                      <h3>Reports & Exports</h3>
 
-    <div className="recommendation-grid">
-      <button
-  className="btn-accent"
-  onClick={handleDownloadPdf}
->
-        📄 Download PDF Report
-      </button>
+                      <div className="export-row">
+                        <motion.button
+                          className="btn-accent export-btn"
+                          onClick={handleDownloadPdf}
+                          disabled={downloadingPdf}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          <FileText size={16} />
+                          {downloadingPdf ? "Preparing…" : "Download PDF Report"}
+                        </motion.button>
 
-      <button
-  className="btn-ghost"
-  onClick={handleExportExcel}
->
-        📊 Export Excel Telemetry
-      </button>
-    </div>
-  </div>
-</>
-)}
+                        <motion.button
+                          className="btn-ghost export-btn"
+                          onClick={handleExportExcel}
+                          disabled={downloadingExcel}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          <Sheet size={16} />
+                          {downloadingExcel ? "Preparing…" : "Export Excel Telemetry"}
+                        </motion.button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

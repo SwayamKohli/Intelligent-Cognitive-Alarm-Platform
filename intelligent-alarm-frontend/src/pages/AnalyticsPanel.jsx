@@ -14,6 +14,7 @@ import { staggerContainer, staggerItem } from "../lib/motion";
 
 const RADIUS = 54;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const AXIS_COLOR = "#6F6B64"; // matches --text-dim
 
 // Reads a breakdown field whether it's nested under `breakdown` or flat on the root
 function getMetric(habitScore, key) {
@@ -46,6 +47,16 @@ const BADGES = [
     getUnlocked: (h) => getMetric(h, "sleep_adherence") >= 80,
   },
 ];
+
+const TOOLTIP_STYLE = {
+  contentStyle: {
+    background: "#131316",
+    border: "1px solid rgba(244,197,66,0.25)",
+    borderRadius: 10,
+    fontSize: 13,
+  },
+  labelStyle: { color: "#F5F0E6" },
+};
 
 const AnalyticsPanel = ({ habitScore, recommendations }) => {
   const trendData =
@@ -189,15 +200,9 @@ const AnalyticsPanel = ({ habitScore, recommendations }) => {
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                <XAxis dataKey="day" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="consistency"
-                  stroke="#f4c542"
-                  strokeWidth={3}
-                />
+                <XAxis dataKey="day" stroke={AXIS_COLOR} />
+                <YAxis stroke={AXIS_COLOR} />
+                <Tooltip {...TOOLTIP_STYLE} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -208,9 +213,9 @@ const AnalyticsPanel = ({ habitScore, recommendations }) => {
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                <XAxis dataKey="day" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip />
+                <XAxis dataKey="day" stroke={AXIS_COLOR} />
+                <YAxis stroke={AXIS_COLOR} />
+                <Tooltip {...TOOLTIP_STYLE} />
                 <Bar dataKey="snooze" fill="#f4c542" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -222,9 +227,9 @@ const AnalyticsPanel = ({ habitScore, recommendations }) => {
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                <XAxis dataKey="day" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip />
+                <XAxis dataKey="day" stroke={AXIS_COLOR} />
+                <YAxis stroke={AXIS_COLOR} />
+                <Tooltip {...TOOLTIP_STYLE} />
                 <Line
                   type="monotone"
                   dataKey="challengeTime"
