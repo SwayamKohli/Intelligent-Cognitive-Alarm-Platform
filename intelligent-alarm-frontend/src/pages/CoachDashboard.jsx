@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { FileText, Sheet } from "lucide-react";
 import api from "../lib/api";
 import { staggerContainer, staggerItem } from "../lib/motion";
 import "./CoachDashboard.css";
@@ -24,41 +25,46 @@ function CoachDashboard() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
-const handleDownloadPdf = async () => {
-  try {
-    const response = await api.get("/reports/export/pdf", {
-      responseType: "blob",
-    });
+  const [downloadingId, setDownloadingId] = useState(null);
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+  const triggerDownload = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "Coach_Report.pdf");
+    link.setAttribute("download", filename);
     document.body.appendChild(link);
     link.click();
     link.remove();
-  } catch (error) {
-    console.error(error);
-  }
-};
+    window.URL.revokeObjectURL(url);
+  };
 
-const handleExportExcel = async () => {
-  try {
-    const response = await api.get("/reports/export/excel", {
-      responseType: "blob",
-    });
+  const handleDownloadPdf = async (userId, userName) => {
+    setDownloadingId(`${userId}-pdf`);
+    try {
+      const response = await api.get(`/reports/export/pdf?user_id=${userId}`, {
+        responseType: "blob",
+      });
+      triggerDownload(new Blob([response.data]), `${userName}_Sleep_Report.pdf`);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "Coach_Telemetry.xlsx");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (error) {
-    console.error(error);
-  }
-};
+  const handleExportExcel = async (userId, userName) => {
+    setDownloadingId(`${userId}-excel`);
+    try {
+      const response = await api.get(`/reports/export/excel?user_id=${userId}`, {
+        responseType: "blob",
+      });
+      triggerDownload(new Blob([response.data]), `${userName}_Telemetry.xlsx`);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -87,21 +93,6 @@ const handleExportExcel = async () => {
           Coach Dashboard
         </motion.h1>
         <p className="coach-subtitle">Assigned users and their habit adherence</p>
-        <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
-  <button
-    className="btn-accent"
-    onClick={handleDownloadPdf}
-  >
-    📄 Download PDF Report
-  </button>
-
-  <button
-    className="btn-ghost"
-    onClick={handleExportExcel}
-  >
-    📊 Export Excel Telemetry
-  </button>
-</div>
 
         <motion.div
           className="glass-card coach-panel"
@@ -122,11 +113,13 @@ const handleExportExcel = async () => {
                 <span>Email</span>
                 <span>Target Schedule</span>
                 <span>Habit Score</span>
+                <span>Reports</span>
               </div>
 
               <motion.div variants={staggerContainer} initial="initial" animate="animate">
                 {users.map((user) => {
                   const score = user.habit_score ?? 0;
+                  const name = user.full_name || "User";
                   return (
                     <motion.div
                       key={user.id}
@@ -135,14 +128,33 @@ const handleExportExcel = async () => {
                       whileHover={{ backgroundColor: "rgba(255,255,255,0.03)" }}
                     >
                       <span className="user-cell">
-                        <span className="user-avatar">{initials(user.full_name)}</span>
-                        {user.full_name || "User"}
+                        <span className="user-avatar">{initials(name)}</span>
+                        {name}
                       </span>
                       <span className="user-email">{user.email}</span>
                       <span>
                         {user.bedtime ? `${user.bedtime} – ${user.wake_time}` : "Not set"}
                       </span>
                       <span className={`rate-badge ${scoreTier(score)}`}>{score}%</span>
+
+                      <span className="report-actions">
+                        <button
+                          className="icon-btn"
+                          onClick={() => handleDownloadPdf(user.id, name)}
+                          disabled={downloadingId === `${user.id}-pdf`}
+                          title="Download PDF"
+                        >
+                          <FileText size={16} />
+                        </button>
+                        <button
+                          className="icon-btn"
+                          onClick={() => handleExportExcel(user.id, name)}
+                          disabled={downloadingId === `${user.id}-excel`}
+                          title="Export Excel"
+                        >
+                          <Sheet size={16} />
+                        </button>
+                      </span>
                     </motion.div>
                   );
                 })}

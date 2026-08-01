@@ -2,7 +2,7 @@ import io
 from datetime import datetime, timezone, timedelta, time
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import pandas as pd
@@ -53,13 +53,35 @@ def _calculate_sleep_duration(bedtime: Optional[time], wake_time: Optional[time]
 
 @router.get("/export/pdf")
 async def export_pdf_report(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    user_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
-    Generates a formatted PDF sleep & habit summary report for the authenticated user.
+    Generates a formatted PDF sleep & habit summary report.
+    Allows Coaches/Admins to pull reports for specific users.
     """
+    target_user = current_user
+
+    # If a specific user_id is requested, verify permissions and fetch them
+    if user_id and user_id != str(current_user.id):
+        if str(current_user.role).lower() not in [
+            "userrole.admin",
+            "userrole.coach",
+            "admin",
+            "coach",
+            "wellness_coach",
+            "userrole.wellness_coach",
+        ]:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to pull other user reports."
+            )
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found.")
+
     # 1. Fetch 7-day telemetry and calculate scores
-    telemetry = await get_user_telemetry_last_7_days(str(current_user.id))
+    telemetry = await get_user_telemetry_last_7_days(str(target_user.id))
 
     days_active = telemetry.get("days_active", 0)
     consistency = round((days_active / 7.0) * 100.0, 2)
@@ -68,7 +90,7 @@ async def export_pdf_report(
     total_snoozes = telemetry.get("total_snoozes", 0)
     snooze_reduction = round(max(0.0, 100.0 - (total_snoozes * 10.0)), 2)
     sleep_adherence = (
-        100.0 if (current_user.target_bedtime and current_user.target_wake_time) else 80.0
+        100.0 if (target_user.target_bedtime and target_user.target_wake_time) else 80.0
     )
 
     habit_score = calculate_habit_score(
@@ -80,20 +102,20 @@ async def export_pdf_report(
 
     # 2. Fetch AI Recommendations
     recommendations = await generate_ai_recommendations(
-        user_name=current_user.full_name or "User",
+        user_name=target_user.full_name or "User",
         telemetry_data=telemetry,
         habit_score=habit_score,
     )
 
     sleep_duration_str = _calculate_sleep_duration(
-        current_user.target_bedtime, current_user.target_wake_time
+        target_user.target_bedtime, target_user.target_wake_time
     )
     bedtime_str = (
-        current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else "Not set"
+        target_user.target_bedtime.strftime("%H:%M") if target_user.target_bedtime else "Not set"
     )
     wake_time_str = (
-        current_user.target_wake_time.strftime("%H:%M")
-        if current_user.target_wake_time
+        target_user.target_wake_time.strftime("%H:%M")
+        if target_user.target_wake_time
         else "Not set"
     )
 
@@ -173,7 +195,7 @@ async def export_pdf_report(
     generated_at_str = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
     story.append(
         Paragraph(
-            f"Generated for: <b>{current_user.full_name}</b> ({current_user.email}) | Date: {generated_at_str}",
+            f"Generated for: <b>{target_user.full_name}</b> ({target_user.email}) | Date: {generated_at_str}",
             subtitle_style,
         )
     )
@@ -186,27 +208,27 @@ async def export_pdf_report(
     user_info_data = [
         [
             Paragraph("Full Name", cell_bold),
-            Paragraph(current_user.full_name or "N/A", cell_normal),
+            Paragraph(target_user.full_name or "N/A", cell_normal),
             Paragraph("Target Bedtime", cell_bold),
             Paragraph(bedtime_str, cell_normal),
         ],
         [
             Paragraph("Email", cell_bold),
-            Paragraph(current_user.email, cell_normal),
+            Paragraph(target_user.email, cell_normal),
             Paragraph("Target Wake Time", cell_bold),
             Paragraph(wake_time_str, cell_normal),
         ],
         [
             Paragraph("Timezone", cell_bold),
-            Paragraph(current_user.timezone or "UTC", cell_normal),
+            Paragraph(target_user.timezone or "UTC", cell_normal),
             Paragraph("Expected Sleep Duration", cell_bold),
             Paragraph(sleep_duration_str, cell_normal),
         ],
         [
             Paragraph("Current Streak", cell_bold),
-            Paragraph(f"{current_user.current_streak} days", cell_normal),
+            Paragraph(f"{target_user.current_streak} days", cell_normal),
             Paragraph("Productivity Goal", cell_bold),
-            Paragraph(current_user.productivity_goal or "Not specified", cell_normal),
+            Paragraph(target_user.productivity_goal or "Not specified", cell_normal),
         ],
     ]
     user_info_table = Table(user_info_data, colWidths=[110, 160, 130, 140])
@@ -364,7 +386,7 @@ async def export_pdf_report(
     doc.build(story)
     pdf_buffer.seek(0)
 
-    filename = f"sleep_summary_report_{current_user.id}.pdf"
+    filename = f"sleep_summary_report_{target_user.id}.pdf"
     return StreamingResponse(
         pdf_buffer,
         media_type="application/pdf",
@@ -374,13 +396,34 @@ async def export_pdf_report(
 
 @router.get("/export/excel")
 async def export_excel_report(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    user_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Exports last 7 days MongoDB telemetry, habit progression, sleep duration,
     and user habit score into an Excel workbook (.xlsx).
     """
-    user_id_str = str(current_user.id)
+    target_user = current_user
+
+    # If a specific user_id is requested, verify permissions and fetch them
+    if user_id and user_id != str(current_user.id):
+        if str(current_user.role).lower() not in [
+            "userrole.admin",
+            "userrole.coach",
+            "admin",
+            "coach",
+            "wellness_coach",
+            "userrole.wellness_coach",
+        ]:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to pull other user reports."
+            )
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found.")
+
+    user_id_str = str(target_user.id)
     now = datetime.now(timezone.utc)
     seven_days_ago = now - timedelta(days=7)
 
@@ -394,7 +437,7 @@ async def export_excel_report(
     total_snoozes = telemetry.get("total_snoozes", 0)
     snooze_reduction = round(max(0.0, 100.0 - (total_snoozes * 10.0)), 2)
     sleep_adherence = (
-        100.0 if (current_user.target_bedtime and current_user.target_wake_time) else 80.0
+        100.0 if (target_user.target_bedtime and target_user.target_wake_time) else 80.0
     )
 
     habit_score = calculate_habit_score(
@@ -405,28 +448,28 @@ async def export_excel_report(
     )
 
     sleep_duration_str = _calculate_sleep_duration(
-        current_user.target_bedtime, current_user.target_wake_time
+        target_user.target_bedtime, target_user.target_wake_time
     )
     bedtime_str = (
-        current_user.target_bedtime.strftime("%H:%M") if current_user.target_bedtime else "Not set"
+        target_user.target_bedtime.strftime("%H:%M") if target_user.target_bedtime else "Not set"
     )
     wake_time_str = (
-        current_user.target_wake_time.strftime("%H:%M")
-        if current_user.target_wake_time
+        target_user.target_wake_time.strftime("%H:%M")
+        if target_user.target_wake_time
         else "Not set"
     )
 
     # Sheet 1: Sleep & Habit Summary Data
     summary_data = [
         {"Attribute": "User ID", "Value": user_id_str},
-        {"Attribute": "Full Name", "Value": current_user.full_name or "N/A"},
-        {"Attribute": "Email", "Value": current_user.email},
-        {"Attribute": "Timezone", "Value": current_user.timezone or "UTC"},
+        {"Attribute": "Full Name", "Value": target_user.full_name or "N/A"},
+        {"Attribute": "Email", "Value": target_user.email},
+        {"Attribute": "Timezone", "Value": target_user.timezone or "UTC"},
         {
             "Attribute": "Productivity Goal",
-            "Value": current_user.productivity_goal or "N/A",
+            "Value": target_user.productivity_goal or "N/A",
         },
-        {"Attribute": "Current Streak (Days)", "Value": current_user.current_streak},
+        {"Attribute": "Current Streak (Days)", "Value": target_user.current_streak},
         {"Attribute": "Target Bedtime", "Value": bedtime_str},
         {"Attribute": "Target Wake Time", "Value": wake_time_str},
         {"Attribute": "Calculated Sleep Duration", "Value": sleep_duration_str},
@@ -486,7 +529,7 @@ async def export_excel_report(
         df_telemetry = pd.DataFrame(raw_logs)
 
     # Sheet 3: Habit Progression & Logs from PostgreSQL
-    user_habits = db.query(Habit).filter(Habit.user_id == current_user.id).all()
+    user_habits = db.query(Habit).filter(Habit.user_id == target_user.id).all()
     habit_list_data = []
     habit_log_data = []
 
@@ -539,7 +582,7 @@ async def export_excel_report(
         df_habit_logs.to_excel(writer, sheet_name="Habit Progression Logs", index=False)
 
     excel_buffer.seek(0)
-    filename = f"sleep_habit_report_{current_user.id}.xlsx"
+    filename = f"sleep_habit_report_{target_user.id}.xlsx"
 
     return StreamingResponse(
         excel_buffer,

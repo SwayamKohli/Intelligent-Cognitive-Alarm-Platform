@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  LayoutDashboard,
+  AlarmClock,
+  BarChart3,
+  Settings,
+  FileText,
+  Sheet,
+} from "lucide-react";
 import api from "../lib/api";
 import AlarmModal from "./AlarmModal";
 import CreateAlarmForm from "./CreateAlarmForm";
@@ -9,22 +17,52 @@ import "./Dashboard.css";
 import AnalyticsPanel from "./AnalyticsPanel";
 
 const NAV_ITEMS = [
-  { key: "dashboard", label: "Dashboard", icon: "◈" },
-  { key: "alarms", label: "My Alarms", icon: "⏰" },
-  { key: "analytics", label: "Analytics", icon: "▲" },
+  { key: "overview", label: "Dashboard", icon: LayoutDashboard },
+  { key: "alarms", label: "My Alarms", icon: AlarmClock },
+  { key: "analytics", label: "Analytics", icon: BarChart3 },
+  { key: "profile", label: "Profile Settings", icon: Settings },
 ];
 
 const AVAILABLE_CHALLENGES = [
   "math", "memory", "pattern", "logic", "word_scramble", "riddle", "quiz",
 ];
 
+function ToggleSwitch({ checked, onChange, label }) {
+  return (
+    <div className="toggle-pref-row">
+      <span className="toggle-pref-label">{label}</span>
+      <button
+        type="button"
+        className={checked ? "toggle-switch on" : "toggle-switch"}
+        onClick={() => onChange(!checked)}
+        aria-pressed={checked}
+      >
+        <span className="toggle-switch-thumb" />
+      </button>
+    </div>
+  );
+}
+
+function getGreeting(date) {
+  const hour = date.getHours();
+  if (hour < 5) return "Still up?";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  if (hour < 21) return "Good evening";
+  return "Good night";
+}
+
 function Dashboard() {
   const navigate = useNavigate();
 
   const [showCreateAlarm, setShowCreateAlarm] = useState(false);
   const [alarms, setAlarms] = useState([]);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("overview");
   const [loadingAlarms, setLoadingAlarms] = useState(true);
+  const [togglingAlarmId, setTogglingAlarmId] = useState(null);
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
 
   const [isAlarmRinging, setIsAlarmRinging] = useState(false);
   const [currentChallenge, setCurrentChallenge] = useState(null);
@@ -39,6 +77,7 @@ function Dashboard() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [toast, setToast] = useState(null);
   const [habitScore, setHabitScore] = useState(null);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [recommendations, setRecommendations] = useState({
   sleep: "",
   wake_up: "",
@@ -55,6 +94,13 @@ function Dashboard() {
 });
 
 const [savingNotifications, setSavingNotifications] = useState(false);
+
+  // Live clock — ticks every 30s, which is plenty for a HUD display
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000 * 30);
+    return () => clearInterval(interval);
+  }, []);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -84,13 +130,27 @@ const [savingNotifications, setSavingNotifications] = useState(false);
   }
 };
   const fetchRecommendations = async () => {
-  try {
-    const { data } = await api.get("/analytics/recommendations");
-    setRecommendations(data);
-  } catch (error) {
-    console.log(error);
-  }
-};
+    try {
+      const { data } = await api.get("/analytics/recommendations");
+
+      // Safely extract the string if Groq returns a nested object
+      const safeExtract = (item) => {
+        if (typeof item === 'object' && item !== null) {
+          return item.advice || JSON.stringify(item);
+        }
+        return typeof item === 'string' ? item : 'No suggestions available.';
+      };
+
+      setRecommendations({
+        sleep: safeExtract(data.sleep),
+        wake_up: safeExtract(data.wake_up),
+        habit: safeExtract(data.habit),
+        productivity: safeExtract(data.productivity),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
   const fetchNotificationSettings = async () => {
   try {
     const { data } = await api.get("/notifications/preferences");
@@ -107,6 +167,7 @@ const [savingNotifications, setSavingNotifications] = useState(false);
       setProfileDifficulty(data.difficulty_preference || "medium");
       setTargetBedtime(data.target_bedtime || "22:00");
       setTargetWakeTime(data.target_wake_time || "06:00");
+      setCurrentStreak(data.current_streak || 0);
       if (data.preferred_challenges) {
         setGlobalPreferredChallenges(data.preferred_challenges.split(","));
       }
@@ -155,6 +216,28 @@ const [savingNotifications, setSavingNotifications] = useState(false);
     } catch (error) {
       console.log(error);
       showToast("Failed to delete alarm", "error");
+    }
+  };
+
+  // Quick Actions: your API has no PUT /alarms/{id} route, so there's no way
+  // to flip is_active directly — only GET/POST /alarms/, POST /alarms/snooze,
+  // and DELETE /alarms/{id} exist. Using the one write action that's actually
+  // available: snooze the next alarm right from the HUD.
+  // NOTE: guessing SnoozeRequest's field names (alarm_id + snooze_minutes) —
+  // check your SnoozeRequest schema in /docs and adjust the payload keys below
+  // if they don't match.
+  const handleQuickSnooze = async (alarm) => {
+    setTogglingAlarmId(alarm.id);
+    try {
+      await api.post("/alarms/snooze", {
+        alarm_id: alarm.id,
+      });
+      showToast(`Snoozed "${alarm.label}"`);
+    } catch (error) {
+      console.log(error);
+      showToast("Failed to snooze alarm", "error");
+    } finally {
+      setTogglingAlarmId(null);
     }
   };
 
@@ -210,51 +293,67 @@ const [savingNotifications, setSavingNotifications] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
-    navigate("/login");
+    // Clear any Authorization header set on the shared axios instance so a
+    // stray in-flight request can't silently re-auth after logout.
+    if (api?.defaults?.headers?.common?.Authorization) {
+      delete api.defaults.headers.common.Authorization;
+    }
+    // navigate() alone was leaving the app on a stale Dashboard render until
+    // a manual refresh — forcing a hard redirect guarantees the app remounts
+    // cleanly on /login with no leftover auth state.
+    window.location.href = "/login";
   };
+
+  const triggerDownload = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleDownloadPdf = async () => {
-  try {
-    const response = await api.get("/reports/export/pdf", {
-      responseType: "blob",
-    });
+    setDownloadingPdf(true);
+    try {
+      const response = await api.get("/reports/export/pdf", { responseType: "blob" });
+      triggerDownload(new Blob([response.data]), "Sleep_Report.pdf");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to download PDF report", "error");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "Sleep_Report.pdf");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (error) {
-    console.error(error);
-    showToast("Failed to download PDF report", "error");
-  }
-};
+  const handleExportExcel = async () => {
+    setDownloadingExcel(true);
+    try {
+      const response = await api.get("/reports/export/excel", { responseType: "blob" });
+      triggerDownload(new Blob([response.data]), "Telemetry_Report.xlsx");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to export Excel report", "error");
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
 
-const handleExportExcel = async () => {
-  try {
-    const response = await api.get("/reports/export/excel", {
-      responseType: "blob",
-    });
+  const score = habitScore?.overall_score ?? habitScore?.score ?? 0;
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "Telemetry_Report.xlsx");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (error) {
-    console.error(error);
-    showToast("Failed to export Excel report", "error");
-  }
-};
-  const score =
-  habitScore?.overall_score ?? habitScore?.score ?? 0;
+  const nextAlarm = alarms
+    .filter((a) => a.is_active)
+    .sort((a, b) => a.time.localeCompare(b.time))[0];
 
-const radius = 55;
-const circumference = 2 * Math.PI * radius;
-const progress = circumference - (score / 100) * circumference;
+  const clockString = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const dateString = now.toLocaleDateString([], {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <>
       <AnimatePresence>
@@ -279,27 +378,34 @@ const progress = circumference - (score / 100) * circumference;
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="sidebar-brand">
-            <span className="brand-icon">⏰</span>
+            <span className="brand-icon">
+              <AlarmClock size={22} />
+            </span>
             <h2>Cognitive Alarm</h2>
           </div>
 
           <nav className="sidebar-nav">
-            {NAV_ITEMS.map((item) => (
-              <button
-                key={item.key}
-                className={activeTab === item.key ? "nav-btn active" : "nav-btn"}
-                onClick={() => setActiveTab(item.key)}
-              >
-                <span className="nav-icon">{item.icon}</span>
-                {item.label}
-                {activeTab === item.key && (
-                  <motion.span
-                    className="nav-indicator"
-                    layoutId="nav-indicator"
-                  />
-                )}
-              </button>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  className={activeTab === item.key ? "nav-btn active" : "nav-btn"}
+                  onClick={() => setActiveTab(item.key)}
+                >
+                  <span className="nav-icon">
+                    <Icon size={18} />
+                  </span>
+                  {item.label}
+                  {activeTab === item.key && (
+                    <motion.span
+                      className="nav-indicator"
+                      layoutId="nav-indicator"
+                    />
+                  )}
+                </button>
+              );
+            })}
           </nav>
 
           <button className="logout-btn" onClick={handleLogout}>
@@ -313,15 +419,89 @@ const progress = circumference - (score / 100) * circumference;
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            {activeTab === "dashboard" && "Profile Settings"}
+            {activeTab === "overview" && "Command Center"}
+            {activeTab === "profile" && "Profile Settings"}
             {activeTab === "alarms" && "My Alarms"}
             {activeTab === "analytics" && "Analytics"}
           </motion.h1>
 
           <AnimatePresence mode="wait">
-            {activeTab === "dashboard" && (
+            {activeTab === "overview" && (
               <motion.div
-                key="dashboard"
+                key="overview"
+                className="overview-grid"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35 }}
+              >
+                <div className="glass-card hero-card">
+                  <div className="hero-card-top">
+                    <div>
+                      <h2>
+                        {getGreeting(now)}, {profileName || "Sleep Architect"}!
+                      </h2>
+                      <p>
+                        You are currently on a{" "}
+                        <span className="highlight-text">{currentStreak}-day</span> wake-up
+                        streak.{" "}
+                        {currentStreak > 2
+                          ? "You're building incredible momentum."
+                          : "Let's build that momentum."}
+                      </p>
+                    </div>
+                    <div className="hero-clock">
+                      <span className="hero-clock-time">{clockString}</span>
+                      <span className="hero-clock-date">{dateString}</span>
+                      <span className="hero-clock-tz">{profileTimezone}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="glass-card widget-card">
+                  <h3>Next Active Alarm</h3>
+                  {nextAlarm ? (
+                    <>
+                      <div className="next-alarm-display">
+                        <div className="next-alarm-time">{nextAlarm.time.slice(0, 5)}</div>
+                        <div className="next-alarm-details">
+                          <p>{nextAlarm.label}</p>
+                          <span className="widget-subtext">
+                            {nextAlarm.alarm_type.replace("_", " ")}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="quick-action-row">
+                        <span className="toggle-pref-label">Quick action</span>
+                        <button
+                          type="button"
+                          className="btn-ghost small"
+                          disabled={togglingAlarmId === nextAlarm.id}
+                          onClick={() => handleQuickSnooze(nextAlarm)}
+                        >
+                          {togglingAlarmId === nextAlarm.id ? "Snoozing…" : "Snooze"}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="widget-value widget-value-empty">No alarms set</div>
+                  )}
+                </div>
+
+                <div className="glass-card widget-card">
+                  <h3>Habit Pulse</h3>
+                  <div className="widget-value">
+                    {Math.round(score)}
+                    <span className="widget-value-suffix">/100</span>
+                  </div>
+                  <p className="widget-subtext">Overall adherence score</p>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "profile" && (
+              <motion.div
+                key="profile"
                 className="glass-card profile-card"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -414,100 +594,83 @@ const progress = circumference - (score / 100) * circumference;
                 >
                   {savingProfile ? "Saving…" : "Save Profile"}
                 </motion.button>
-                <div className="glass-card" style={{ marginTop: "24px" }}>
-  <h3>Notification Preferences</h3>
 
-  <div className="field-group">
-    <label>
-      <input
-        type="checkbox"
-        checked={notificationSettings.bedtime_warning_enabled}
-        onChange={(e) =>
-          setNotificationSettings({
-            ...notificationSettings,
-            bedtime_warning_enabled: e.target.checked,
-          })
-        }
-      />
-      {" "}Enable Bedtime Reminder
-    </label>
-  </div>
+                <div className="glass-card notification-card">
+                  <h3>Notification Preferences</h3>
 
-  <div className="field-group">
-    <label>Reminder Minutes Before Bedtime</label>
-    <input
-      type="number"
-      min="5"
-      max="120"
-      value={notificationSettings.bedtime_warning_minutes}
-      onChange={(e) =>
-        setNotificationSettings({
-          ...notificationSettings,
-          bedtime_warning_minutes: Number(e.target.value),
-        })
-      }
-    />
-  </div>
+                  <ToggleSwitch
+                    label="Bedtime warning"
+                    checked={notificationSettings.bedtime_warning_enabled}
+                    onChange={(val) =>
+                      setNotificationSettings((prev) => ({ ...prev, bedtime_warning_enabled: val }))
+                    }
+                  />
 
-  <div className="field-group">
-    <label>
-      <input
-        type="checkbox"
-        checked={notificationSettings.morning_streak_alert}
-        onChange={(e) =>
-          setNotificationSettings({
-            ...notificationSettings,
-            morning_streak_alert: e.target.checked,
-          })
-        }
-      />
-      {" "}Morning Streak Alerts
-    </label>
-  </div>
+                  {notificationSettings.bedtime_warning_enabled && (
+                    <div className="minutes-row">
+                      <span className="toggle-pref-label">Warn me before bedtime</span>
+                      <div className="minutes-stepper">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNotificationSettings((prev) => ({
+                              ...prev,
+                              bedtime_warning_minutes: Math.max(5, prev.bedtime_warning_minutes - 5),
+                            }))
+                          }
+                        >
+                          −
+                        </button>
+                        <span>{notificationSettings.bedtime_warning_minutes} min</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNotificationSettings((prev) => ({
+                              ...prev,
+                              bedtime_warning_minutes: Math.min(120, prev.bedtime_warning_minutes + 5),
+                            }))
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-  <div className="field-group">
-    <label>
-      <input
-        type="checkbox"
-        checked={notificationSettings.challenge_reminders}
-        onChange={(e) =>
-          setNotificationSettings({
-            ...notificationSettings,
-            challenge_reminders: e.target.checked,
-          })
-        }
-      />
-      {" "}Challenge Reminders
-    </label>
-  </div>
+                  <ToggleSwitch
+                    label="Morning streak alerts"
+                    checked={notificationSettings.morning_streak_alert}
+                    onChange={(val) =>
+                      setNotificationSettings((prev) => ({ ...prev, morning_streak_alert: val }))
+                    }
+                  />
 
-  <div className="field-group">
-    <label>
-      <input
-        type="checkbox"
-        checked={notificationSettings.weekly_sleep_report}
-        onChange={(e) =>
-          setNotificationSettings({
-            ...notificationSettings,
-            weekly_sleep_report: e.target.checked,
-          })
-        }
-      />
-      {" "}Weekly Sleep Report
-    </label>
-  </div>
+                  <ToggleSwitch
+                    label="Challenge reminders"
+                    checked={notificationSettings.challenge_reminders}
+                    onChange={(val) =>
+                      setNotificationSettings((prev) => ({ ...prev, challenge_reminders: val }))
+                    }
+                  />
 
-  <motion.button
-    className="btn-accent full-width"
-    onClick={handleSaveNotifications}
-    disabled={savingNotifications}
-    whileTap={{ scale: 0.97 }}
-  >
-    {savingNotifications
-      ? "Saving..."
-      : "Save Notification Settings"}
-  </motion.button>
-</div>
+                  <ToggleSwitch
+                    label="Weekly sleep report"
+                    checked={notificationSettings.weekly_sleep_report}
+                    onChange={(val) =>
+                      setNotificationSettings((prev) => ({ ...prev, weekly_sleep_report: val }))
+                    }
+                  />
+
+                  <motion.button
+                    className="btn-accent full-width"
+                    onClick={handleSaveNotifications}
+                    disabled={savingNotifications}
+                    whileTap={{ scale: 0.97 }}
+                    style={{ marginTop: "16px" }}
+                  >
+                    {savingNotifications ? "Saving…" : "Save Notification Settings"}
+                  </motion.button>
+                </div>
               </motion.div>
             )}
 
@@ -598,35 +761,41 @@ const progress = circumference - (score / 100) * circumference;
                 transition={{ duration: 0.35 }}
               >
                 {loadingAnalytics ? (
-  <p className="empty-state">Loading analytics...</p>
-) : (
-  <>
-  <AnalyticsPanel
-    habitScore={habitScore}
-    recommendations={recommendations}
-  />
+                  <p className="empty-state">Loading analytics...</p>
+                ) : (
+                  <>
+                    <AnalyticsPanel
+                      habitScore={habitScore}
+                      recommendations={recommendations}
+                    />
 
-  <div className="analytics-section" style={{ marginTop: "32px" }}>
-    <h3>Reports & Exports</h3>
+                    <div className="analytics-section" style={{ marginTop: "32px" }}>
+                      <h3>Reports & Exports</h3>
 
-    <div className="recommendation-grid">
-      <button
-  className="btn-accent"
-  onClick={handleDownloadPdf}
->
-        📄 Download PDF Report
-      </button>
+                      <div className="export-row">
+                        <motion.button
+                          className="btn-accent export-btn"
+                          onClick={handleDownloadPdf}
+                          disabled={downloadingPdf}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          <FileText size={16} />
+                          {downloadingPdf ? "Preparing…" : "Download PDF Report"}
+                        </motion.button>
 
-      <button
-  className="btn-ghost"
-  onClick={handleExportExcel}
->
-        📊 Export Excel Telemetry
-      </button>
-    </div>
-  </div>
-</>
-)}
+                        <motion.button
+                          className="btn-ghost export-btn"
+                          onClick={handleExportExcel}
+                          disabled={downloadingExcel}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          <Sheet size={16} />
+                          {downloadingExcel ? "Preparing…" : "Export Excel Telemetry"}
+                        </motion.button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

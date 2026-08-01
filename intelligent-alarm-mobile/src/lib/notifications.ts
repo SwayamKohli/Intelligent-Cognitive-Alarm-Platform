@@ -114,3 +114,22 @@ export async function scheduleNativeAlarmNotification(
 export async function cancelAllNativeAlarms() {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
+
+/**
+ * Cancels the single scheduled OS notification tied to a specific alarm ID.
+ * Looks it up by the `alarmId` stored in the notification's data payload,
+ * so no separate local mapping needs to be kept in sync.
+ */
+export async function cancelNativeAlarm(alarmId: string) {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    const match = scheduled.find((n) => n.content.data?.alarmId === alarmId);
+
+    if (match) {
+      await Notifications.cancelScheduledNotificationAsync(match.identifier);
+      console.log(`[OS Notification] Cancelled scheduled alarm for ${alarmId}`);
+    }
+  } catch (error) {
+    console.error('Failed to cancel native alarm notification:', error);
+  }
+}
