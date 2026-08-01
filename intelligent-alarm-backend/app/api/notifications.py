@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional
 
 from app.database import get_db
 from app.models.user import User
@@ -19,6 +21,11 @@ VALID_TOGGLE_SETTINGS = {
     "challenge_reminders",
     "weekly_sleep_report",
 }
+
+
+class FCMTokenRequest(BaseModel):
+    fcm_token: str
+    device_type: Optional[str] = "android"
 
 
 def _get_or_create_user_preferences(user_id: str, db: Session) -> NotificationPreference:
@@ -98,3 +105,24 @@ def toggle_notification_setting(
     db.commit()
     db.refresh(pref)
     return pref
+
+
+@router.post("/fcm-token")
+def register_fcm_token(
+    payload: FCMTokenRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Registers an FCM device token for push notifications (Android / iOS / Web).
+    """
+    pref = _get_or_create_user_preferences(current_user.id, db)
+    if hasattr(pref, "fcm_token"):
+        pref.fcm_token = payload.fcm_token
+        db.commit()
+
+    return {
+        "status": "success",
+        "message": f"FCM token registered for {payload.device_type}",
+        "user_id": str(current_user.id),
+    }
