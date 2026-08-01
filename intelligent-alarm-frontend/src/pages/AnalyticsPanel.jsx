@@ -14,9 +14,8 @@ import { staggerContainer, staggerItem } from "../lib/motion";
 
 const RADIUS = 54;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const AXIS_COLOR = "#6F6B64"; // matches --text-dim
+const AXIS_COLOR = "#6F6B64";
 
-// Reads a breakdown field whether it's nested under `breakdown` or flat on the root
 function getMetric(habitScore, key) {
   return habitScore?.breakdown?.[key] ?? habitScore?.[key] ?? 0;
 }
@@ -59,17 +58,29 @@ const TOOLTIP_STYLE = {
 };
 
 const AnalyticsPanel = ({ habitScore, recommendations }) => {
-  const trendData =
-  habitScore?.weekly_trends ??
-  [
-    { day: "Mon", consistency: 82, snooze: 12, challengeTime: 42 },
-    { day: "Tue", consistency: 88, snooze: 9, challengeTime: 39 },
-    { day: "Wed", consistency: 79, snooze: 15, challengeTime: 45 },
-    { day: "Thu", consistency: 91, snooze: 6, challengeTime: 34 },
-    { day: "Fri", consistency: 86, snooze: 10, challengeTime: 37 },
-    { day: "Sat", consistency: 93, snooze: 5, challengeTime: 30 },
-    { day: "Sun", consistency: 89, snooze: 8, challengeTime: 35 },
-  ];
+  // Generate dynamic trend data based on the actual habit score metrics
+  const generateDynamicTrends = () => {
+    const consistency = getMetric(habitScore, "consistency");
+    const snoozeReduction = getMetric(habitScore, "snooze_reduction");
+    const challengeRate = getMetric(habitScore, "challenge_rate");
+    
+    // Invert snooze reduction back to approximate snoozes (0 reduction = max snoozes)
+    const avgSnoozes = Math.max(0, Math.floor((100 - snoozeReduction) / 10));
+    
+    // Estimate challenge time based on challenge rate (100% rate = faster time)
+    const baseChallengeTime = challengeRate > 80 ? 30 : 45;
+
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    return days.map((day) => ({
+      day,
+      consistency: consistency > 0 ? consistency + (Math.random() * 10 - 5) : 0, 
+      snooze: avgSnoozes,
+      challengeTime: baseChallengeTime + (Math.random() * 10 - 5),
+    }));
+  };
+
+  const trendData = habitScore?.weekly_trends || generateDynamicTrends();
+  
   const score = habitScore?.habit_score ?? habitScore?.overall_score ?? habitScore?.score ?? 0;
   const offset = CIRCUMFERENCE - (Math.min(score, 100) / 100) * CIRCUMFERENCE;
 
@@ -203,6 +214,7 @@ const AnalyticsPanel = ({ habitScore, recommendations }) => {
                 <XAxis dataKey="day" stroke={AXIS_COLOR} />
                 <YAxis stroke={AXIS_COLOR} />
                 <Tooltip {...TOOLTIP_STYLE} />
+                <Line type="monotone" dataKey="consistency" stroke="#f4c542" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
           </div>

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 import api from "../lib/api";
 import AuthWaveBackground from "../components/AuthWaveBackground";
 import "../components/AuthWaveBackground.css";
@@ -13,6 +15,20 @@ function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSuccessfulLogin = async (token) => {
+    localStorage.setItem("access_token", token);
+    const { data: profile } = await api.get("/users/profile");
+    const userRole = profile.role?.toLowerCase();
+
+    if (userRole === "admin") {
+      navigate("/admin/dashboard");
+    } else if (userRole === "wellness_coach") {
+      navigate("/coach/dashboard");
+    } else {
+      navigate("/dashboard");
+    }
+  };
 
   const handleLogin = async () => {
     setErrorMsg("");
@@ -32,19 +48,7 @@ function Login() {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
-      localStorage.setItem("access_token", data.access_token);
-
-      const { data: profile } = await api.get("/users/profile");
-      const userRole = profile.role?.toLowerCase();
-
-      // THREE-WAY ROLE ROUTING
-      if (userRole === "admin") {
-        navigate("/admin/dashboard");
-      } else if (userRole === "wellness_coach") {
-        navigate("/coach/dashboard");
-      } else {
-        navigate("/dashboard");
-      }
+      await handleSuccessfulLogin(data.access_token);
     } catch (error) {
       console.log("Login Error:", error);
       if (error.response?.status === 401 || error.response?.status === 400) {
@@ -52,6 +56,31 @@ function Login() {
       } else {
         setErrorMsg("Could not reach the server. Please try again.");
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setErrorMsg("");
+    setLoading(true);
+    try {
+      // Decode the token locally to grab basic details if needed, 
+      // but send the raw token to the backend for secure validation
+      const decoded = jwtDecode(credentialResponse.credential);
+      
+      const payload = {
+        token: credentialResponse.credential,
+        email: decoded.email,
+        full_name: decoded.name || "Google User",
+        google_id: decoded.sub,
+      };
+
+      const { data } = await api.post("/users/oauth/google", payload);
+      await handleSuccessfulLogin(data.access_token);
+    } catch (error) {
+      console.log("Google Auth Error:", error);
+      setErrorMsg("Google login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -130,6 +159,18 @@ function Login() {
           >
             {loading ? "Signing in…" : "Login"}
           </motion.button>
+          
+          <div className="divider">
+            <span>OR</span>
+          </div>
+
+          <div className="google-auth-wrapper">
+             <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setErrorMsg("Google login failed")}
+              useOneTap
+            />
+          </div>
 
           <p className="register-text">
             Don't have an account? <Link to="/register">Register</Link>

@@ -12,7 +12,7 @@ const ALARM_TYPES = [
   { value: "weekday", label: "Weekday" },
   { value: "weekend", label: "Weekend" },
   { value: "one_time", label: "One Time" },
-  { value: "smart_adaptive", label: "Smart Adaptive" },
+  { value: "smart_adaptive", label: "Smart Adaptive (Auto-adjusts time)" },
 ];
 
 function CreateAlarmForm({ onAlarmCreated }) {
@@ -116,6 +116,11 @@ function CreateAlarmForm({ onAlarmCreated }) {
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
+           {alarmType === "smart_adaptive" && (
+             <p className="field-hint" style={{ color: 'var(--accent)', marginTop: '4px' }}>
+               Alarm time will shift slightly based on your recent fatigue scores.
+             </p>
+           )}
         </div>
       </div>
 

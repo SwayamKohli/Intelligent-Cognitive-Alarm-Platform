@@ -16,6 +16,9 @@ import { staggerContainer, staggerItem } from "../lib/motion";
 import "./Dashboard.css";
 import AnalyticsPanel from "./AnalyticsPanel";
 
+// Import the new Firebase helper
+import { requestFirebaseNotificationPermission } from "../lib/firebase";
+
 const NAV_ITEMS = [
   { key: "overview", label: "Dashboard", icon: LayoutDashboard },
   { key: "alarms", label: "My Alarms", icon: AlarmClock },
@@ -27,7 +30,7 @@ const AVAILABLE_CHALLENGES = [
   "math", "memory", "pattern", "logic", "word_scramble", "riddle", "quiz",
 ];
 
-function ToggleSwitch({ checked, onChange, label }) {
+function ToggleSwitch({ checked, onChange, label, disabled = false }) {
   return (
     <div className="toggle-pref-row">
       <span className="toggle-pref-label">{label}</span>
@@ -36,6 +39,8 @@ function ToggleSwitch({ checked, onChange, label }) {
         className={checked ? "toggle-switch on" : "toggle-switch"}
         onClick={() => onChange(!checked)}
         aria-pressed={checked}
+        disabled={disabled}
+        style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}
       >
         <span className="toggle-switch-thumb" />
       </button>
@@ -85,17 +90,20 @@ function Dashboard() {
   productivity: "",
 });
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  
+  // Added fcm_enabled to local state
+  const [fcmEnabled, setFcmEnabled] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({
-  bedtime_warning_enabled: true,
-  bedtime_warning_minutes: 30,
-  morning_streak_alert: true,
-  challenge_reminders: false,
-  weekly_sleep_report: true,
-});
+    bedtime_warning_enabled: true,
+    bedtime_warning_minutes: 30,
+    morning_streak_alert: true,
+    challenge_reminders: false,
+    weekly_sleep_report: true,
+  });
 
-const [savingNotifications, setSavingNotifications] = useState(false);
+  const [savingNotifications, setSavingNotifications] = useState(false);
 
-  // Live clock — ticks every 30s, which is plenty for a HUD display
+  // Live clock
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000 * 30);
@@ -118,22 +126,25 @@ const [savingNotifications, setSavingNotifications] = useState(false);
       setLoadingAlarms(false);
     }
   };
-  const fetchHabitScore = async () => {
-  setLoadingAnalytics(true);
-  try {
-    const { data } = await api.get("/analytics/habit-score");
-    setHabitScore(data);
-  } catch (error) {
-    console.log(error);
-  } finally {
-    setLoadingAnalytics(false);
-  }
-};
+
+ const fetchHabitScore = async () => {
+    setLoadingAnalytics(true);
+    try {
+      // ?t=${Date.now()} forces the browser to bypass its local HTTP cache
+      const { data } = await api.get(`/analytics/habit-score?t=${Date.now()}`);
+      setHabitScore(data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
   const fetchRecommendations = async () => {
     try {
-      const { data } = await api.get("/analytics/recommendations");
-
-      // Safely extract the string if Groq returns a nested object
+      // ?t=${Date.now()} forces the browser to bypass its local HTTP cache
+      const { data } = await api.get(`/analytics/recommendations?t=${Date.now()}`);
+      
       const safeExtract = (item) => {
         if (typeof item === 'object' && item !== null) {
           return item.advice || JSON.stringify(item);
@@ -151,14 +162,19 @@ const [savingNotifications, setSavingNotifications] = useState(false);
       console.log(error);
     }
   };
+
   const fetchNotificationSettings = async () => {
-  try {
-    const { data } = await api.get("/notifications/preferences");
-    setNotificationSettings(data);
-  } catch (error) {
-    console.error(error);
-  }
-};
+    try {
+      const { data } = await api.get("/notifications/preferences");
+      setNotificationSettings(data);
+      if (data.fcm_token) {
+        setFcmEnabled(true);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const fetchProfile = async () => {
     try {
       const { data } = await api.get("/users/profile");
@@ -219,13 +235,6 @@ const [savingNotifications, setSavingNotifications] = useState(false);
     }
   };
 
-  // Quick Actions: your API has no PUT /alarms/{id} route, so there's no way
-  // to flip is_active directly — only GET/POST /alarms/, POST /alarms/snooze,
-  // and DELETE /alarms/{id} exist. Using the one write action that's actually
-  // available: snooze the next alarm right from the HUD.
-  // NOTE: guessing SnoozeRequest's field names (alarm_id + snooze_minutes) —
-  // check your SnoozeRequest schema in /docs and adjust the payload keys below
-  // if they don't match.
   const handleQuickSnooze = async (alarm) => {
     setTogglingAlarmId(alarm.id);
     try {
@@ -254,23 +263,47 @@ const [savingNotifications, setSavingNotifications] = useState(false);
     fetchNotificationSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
+
   const handleSaveNotifications = async () => {
-  setSavingNotifications(true);
+    setSavingNotifications(true);
+    try {
+      await api.put("/notifications/preferences", notificationSettings);
+      showToast("Notification settings updated");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to update notification settings", "error");
+    } finally {
+      setSavingNotifications(false);
+    }
+  };
 
-  try {
-    await api.put(
-      "/notifications/preferences",
-      notificationSettings
-    );
+  // --- NEW: Handle FCM Push Notification Toggle ---
+  const handleFcmToggle = async (enabled) => {
+    if (enabled) {
+      const token = await requestFirebaseNotificationPermission();
+      if (token) {
+        try {
+          await api.post("/notifications/fcm-token", {
+            fcm_token: token,
+            device_type: "web"
+          });
+          setFcmEnabled(true);
+          showToast("Push notifications enabled!");
+        } catch (error) {
+          console.error("Failed to save FCM token", error);
+          showToast("Server error saving notification settings.", "error");
+        }
+      } else {
+        showToast("Permission denied by browser.", "error");
+      }
+    } else {
+      // If turning off, we would ideally revoke the token on the backend, 
+      // but for now we just visually disable it.
+      setFcmEnabled(false);
+      showToast("Push notifications disabled.");
+    }
+  };
 
-    showToast("Notification settings updated");
-  } catch (error) {
-    console.error(error);
-    showToast("Failed to update notification settings", "error");
-  } finally {
-    setSavingNotifications(false);
-  }
-};
   const handleAlarmCreated = () => {
     setShowCreateAlarm(false);
     fetchAlarms();
@@ -293,14 +326,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
-    // Clear any Authorization header set on the shared axios instance so a
-    // stray in-flight request can't silently re-auth after logout.
     if (api?.defaults?.headers?.common?.Authorization) {
       delete api.defaults.headers.common.Authorization;
     }
-    // navigate() alone was leaving the app on a stale Dashboard render until
-    // a manual refresh — forcing a hard redirect guarantees the app remounts
-    // cleanly on /login with no leftover auth state.
     window.location.href = "/login";
   };
 
@@ -484,7 +512,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                       </div>
                     </>
                   ) : (
-                    <div className="widget-value widget-value-empty">No alarms set</div>
+                     <div className="widget-value" style={{ fontSize: "20px", color: "var(--text-dim)" }}>
+                       No alarms set
+                     </div>
                   )}
                 </div>
 
@@ -492,7 +522,7 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                   <h3>Habit Pulse</h3>
                   <div className="widget-value">
                     {Math.round(score)}
-                    <span className="widget-value-suffix">/100</span>
+                    <span className="widget-value-suffix" style={{fontSize: '18px', color: 'var(--text-dim)'}}>/100</span>
                   </div>
                   <p className="widget-subtext">Overall adherence score</p>
                 </div>
@@ -597,6 +627,15 @@ const [savingNotifications, setSavingNotifications] = useState(false);
 
                 <div className="glass-card notification-card">
                   <h3>Notification Preferences</h3>
+                  
+                  {/* NEW MASTER TOGGLE FOR PUSH NOTIFICATIONS */}
+                  <div style={{ marginBottom: "16px", paddingBottom: "16px", borderBottom: "1px solid var(--border)" }}>
+                     <ToggleSwitch
+                        label="Enable Browser Push Notifications (FCM)"
+                        checked={fcmEnabled}
+                        onChange={handleFcmToggle}
+                      />
+                  </div>
 
                   <ToggleSwitch
                     label="Bedtime warning"

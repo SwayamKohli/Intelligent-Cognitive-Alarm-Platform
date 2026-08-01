@@ -98,3 +98,36 @@
 .register-text a:hover {
   text-decoration: underline;
 }
+
+/* Google OAuth Divider & Button Wrapper */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 4px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+}
+
+.divider span {
+  padding: 0 10px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.google-auth-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.google-auth-wrapper > div {
+  width: 100% !important;
+}
