@@ -1,6 +1,6 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import { Platform, Alert } from 'react-native';
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import { Platform, Alert } from "react-native";
 
 // 1. Tell the OS how to handle alerts when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -8,8 +8,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
-    shouldShowBanner: true, 
-    shouldShowList: true, 
+    shouldShowBanner: true,
+    shouldShowList: true,
     priority: Notifications.AndroidNotificationPriority.MAX,
   }),
 });
@@ -19,13 +19,15 @@ Notifications.setNotificationHandler({
  */
 export async function registerForPushNotificationsAsync() {
   if (!Device.isDevice) {
-    console.log('Must use physical device or native emulator for background alarms.');
+    console.log(
+      "Must use physical device or native emulator for background alarms.",
+    );
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
-  if (existingStatus !== 'granted') {
+  if (existingStatus !== "granted") {
     const { status } = await Notifications.requestPermissionsAsync({
       ios: {
         allowAlert: true,
@@ -36,22 +38,22 @@ export async function registerForPushNotificationsAsync() {
     finalStatus = status;
   }
 
-  if (finalStatus !== 'granted') {
+  if (finalStatus !== "granted") {
     Alert.alert(
-      'Permission Required',
-      'You must enable notifications in your phone settings so the alarm can wake you up when the app is closed.'
+      "Permission Required",
+      "You must enable notifications in your phone settings so the alarm can wake you up when the app is closed.",
     );
     return false;
   }
 
   // Configure custom Android Alarm Channel for high-priority sound
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('alarm-channel', {
-      name: 'Cognitive Alarms',
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("alarm-channel", {
+      name: "Cognitive Alarms",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500],
-      lightColor: '#FFD700',
-      sound: 'alarm-sound.mp3',
+      lightColor: "#FFD700",
+      sound: "alarm-sound.mp3",
       bypassDnd: true, // Attempt to bypass Do Not Disturb for alarms
     });
   }
@@ -65,10 +67,10 @@ export async function registerForPushNotificationsAsync() {
 export async function scheduleNativeAlarmNotification(
   alarmId: string,
   label: string,
-  timeString: string // Format: "HH:MM:SS" or "HH:MM"
+  timeString: string, // Format: "HH:MM:SS" or "HH:MM"
 ) {
   try {
-    const [hoursStr, minutesStr] = timeString.split(':');
+    const [hoursStr, minutesStr] = timeString.split(":");
     const targetHours = parseInt(hoursStr, 10);
     const targetMinutes = parseInt(minutesStr, 10);
 
@@ -82,14 +84,17 @@ export async function scheduleNativeAlarmNotification(
       triggerDate.setDate(triggerDate.getDate() + 1);
     }
 
-    const secondsUntilTrigger = Math.max(1, Math.floor((triggerDate.getTime() - now.getTime()) / 1000));
+    const secondsUntilTrigger = Math.max(
+      1,
+      Math.floor((triggerDate.getTime() - now.getTime()) / 1000),
+    );
 
     // Schedule the notification with exact seconds
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
-        title: '⏰ WAKE UP! Cognitive Alarm',
+        title: "⏰ WAKE UP! Cognitive Alarm",
         body: `Alarm: "${label}". Tap now to solve your cognitive challenge!`,
-        sound: Platform.OS === 'ios' ? 'alarm-sound.mp3' : 'default',
+        sound: Platform.OS === "ios" ? "alarm-sound.mp3" : "default",
         data: { alarmId, label },
         priority: Notifications.AndroidNotificationPriority.MAX,
       },
@@ -100,10 +105,12 @@ export async function scheduleNativeAlarmNotification(
       },
     });
 
-    console.log(`[OS Notification] Scheduled alarm "${label}" (${alarmId}) for ${triggerDate.toLocaleTimeString()} -> Notification ID: ${notificationId}`);
+    console.log(
+      `[OS Notification] Scheduled alarm "${label}" (${alarmId}) for ${triggerDate.toLocaleTimeString()} -> Notification ID: ${notificationId}`,
+    );
     return notificationId;
   } catch (error) {
-    console.error('Failed to schedule OS background notification:', error);
+    console.error("Failed to schedule OS background notification:", error);
     return null;
   }
 }
@@ -130,6 +137,6 @@ export async function cancelNativeAlarm(alarmId: string) {
       console.log(`[OS Notification] Cancelled scheduled alarm for ${alarmId}`);
     }
   } catch (error) {
-    console.error('Failed to cancel native alarm notification:', error);
+    console.error("Failed to cancel native alarm notification:", error);
   }
 }

@@ -1,19 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Animated } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
-import { Moon, Sunrise, Flame, Zap } from 'lucide-react-native';
-import api from '../lib/api';
-import { colors, radius, spacing, typography } from '../theme';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  RefreshControl,
+  Animated,
+} from "react-native";
+import Svg, { Circle } from "react-native-svg";
+import { Moon, Sunrise, Flame, Zap } from "lucide-react-native";
+import api from "../lib/api";
+import { colors, radius, spacing, typography } from "../theme";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const RADIUS = 54;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 const BADGES = [
-  { key: 'sleep', label: 'Sleep', Icon: Moon },
-  { key: 'wake_up', label: 'Wake Up', Icon: Sunrise },
-  { key: 'habit', label: 'Habit', Icon: Flame },
-  { key: 'productivity', label: 'Productivity', Icon: Zap },
+  { key: "sleep", label: "Sleep", Icon: Moon },
+  { key: "wake_up", label: "Wake Up", Icon: Sunrise },
+  { key: "habit", label: "Habit", Icon: Flame },
+  { key: "productivity", label: "Productivity", Icon: Zap },
 ];
 
 export default function AnalyticsScreen() {
@@ -21,10 +29,10 @@ export default function AnalyticsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [habitData, setHabitData] = useState<any>(null);
   const [recommendations, setRecommendations] = useState({
-    sleep: 'Loading suggestions…',
-    wake_up: 'Loading suggestions…',
-    habit: 'Loading suggestions…',
-    productivity: 'Loading suggestions…',
+    sleep: "Loading suggestions…",
+    wake_up: "Loading suggestions…",
+    habit: "Loading suggestions…",
+    productivity: "Loading suggestions…",
   });
 
   const animatedProgress = useRef(new Animated.Value(CIRCUMFERENCE)).current;
@@ -38,18 +46,18 @@ export default function AnalyticsScreen() {
       isRefresh ? setRefreshing(true) : setLoading(true);
 
       const [scoreRes, recsRes] = await Promise.all([
-        api.get('/analytics/habit-score'),
-        api.get('/analytics/recommendations'),
+        api.get("/analytics/habit-score"),
+        api.get("/analytics/recommendations"),
       ]);
 
       setHabitData(scoreRes.data);
-      
+
       if (recsRes.data) {
         const safeExtract = (item: any) => {
-          if (typeof item === 'object' && item !== null) {
+          if (typeof item === "object" && item !== null) {
             return item.advice || JSON.stringify(item);
           }
-          return typeof item === 'string' ? item : 'No suggestions available.';
+          return typeof item === "string" ? item : "No suggestions available.";
         };
 
         setRecommendations({
@@ -60,42 +68,50 @@ export default function AnalyticsScreen() {
         });
       }
 
-      const score = scoreRes.data?.habit_score ?? scoreRes.data?.overall_score ?? scoreRes.data?.score ?? 0;
-      const offset = CIRCUMFERENCE - (Math.min(score, 100) / 100) * CIRCUMFERENCE;
+      const score =
+        scoreRes.data?.habit_score ??
+        scoreRes.data?.overall_score ??
+        scoreRes.data?.score ??
+        0;
+      const offset =
+        CIRCUMFERENCE - (Math.min(score, 100) / 100) * CIRCUMFERENCE;
       Animated.timing(animatedProgress, {
         toValue: offset,
         duration: 1000,
         useNativeDriver: true,
       }).start();
     } catch (error) {
-      console.error('Failed to fetch analytics:', error);
+      console.error("Failed to fetch analytics:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const overallScore = habitData?.habit_score ?? habitData?.overall_score ?? habitData?.score ?? 0;
+  const overallScore =
+    habitData?.habit_score ?? habitData?.overall_score ?? habitData?.score ?? 0;
 
   const statusLabel =
     overallScore >= 80
-      ? 'Excellent consistency'
+      ? "Excellent consistency"
       : overallScore >= 60
-      ? 'Good progress — keep going'
-      : "Let's build your routine";
+        ? "Good progress — keep going"
+        : "Let's build your routine";
 
   const breakdownRows = [
-    { key: 'consistency', label: 'Consistency', weight: '35%' },
-    { key: 'challenge_rate', label: 'Challenge Success', weight: '25%' },
-    { key: 'snooze_reduction', label: 'Snooze Reduction', weight: '20%' },
-    { key: 'sleep_adherence', label: 'Sleep Adherence', weight: '20%' },
+    { key: "consistency", label: "Consistency", weight: "35%" },
+    { key: "challenge_rate", label: "Challenge Success", weight: "25%" },
+    { key: "snooze_reduction", label: "Snooze Reduction", weight: "20%" },
+    { key: "sleep_adherence", label: "Sleep Adherence", weight: "20%" },
   ];
 
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={styles.loadingText}>Analyzing sleep and telemetry data…</Text>
+        <Text style={styles.loadingText}>
+          Analyzing sleep and telemetry data…
+        </Text>
       </View>
     );
   }
@@ -105,7 +121,11 @@ export default function AnalyticsScreen() {
       style={styles.container}
       contentContainerStyle={{ paddingBottom: 60 }}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={() => fetchAnalytics(true)} tintColor={colors.accent} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => fetchAnalytics(true)}
+          tintColor={colors.accent}
+        />
       }
     >
       <Text style={styles.header}>Analytics</Text>
@@ -115,7 +135,14 @@ export default function AnalyticsScreen() {
 
         <View style={styles.ringWrapper}>
           <Svg width={130} height={130} viewBox="0 0 130 130">
-            <Circle cx="65" cy="65" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+            <Circle
+              cx="65"
+              cy="65"
+              r={RADIUS}
+              fill="none"
+              stroke="rgba(255,255,255,0.06)"
+              strokeWidth="8"
+            />
             <AnimatedCircle
               cx="65"
               cy="65"
@@ -144,7 +171,9 @@ export default function AnalyticsScreen() {
               <Text style={styles.breakdownLabel}>
                 {row.label} ({row.weight})
               </Text>
-              <Text style={styles.breakdownVal}>{habitData?.[row.key] ?? 0}%</Text>
+              <Text style={styles.breakdownVal}>
+                {habitData?.[row.key] ?? 0}%
+              </Text>
             </View>
           ))}
         </View>
@@ -199,10 +228,20 @@ export default function AnalyticsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg },
-  centerContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' },
+  centerContainer: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   loadingText: { ...typography.caption, marginTop: 15 },
   header: { ...typography.h1, marginTop: 40, marginBottom: spacing.lg },
-  sectionTitle: { ...typography.h2, fontSize: 17, marginTop: spacing.lg, marginBottom: spacing.sm + 4 },
+  sectionTitle: {
+    ...typography.h2,
+    fontSize: 17,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm + 4,
+  },
 
   scoreCard: {
     backgroundColor: colors.bgCard,
@@ -210,54 +249,65 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cardTitle: {
     color: colors.textDim,
     fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    textTransform: "uppercase",
     letterSpacing: 0.8,
   },
   ringWrapper: {
     width: 130,
     height: 130,
     marginVertical: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   ringCenter: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  scoreValue: { color: colors.textHigh, fontSize: 32, fontWeight: '800' },
+  scoreValue: { color: colors.textHigh, fontSize: 32, fontWeight: "800" },
   scoreOutOf: { color: colors.textDim, fontSize: 12, marginTop: 2 },
-  scoreSubText: { color: colors.text, fontSize: 14, textAlign: 'center', marginBottom: spacing.md, fontWeight: '500' },
+  scoreSubText: {
+    color: colors.text,
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: spacing.md,
+    fontWeight: "500",
+  },
 
   breakdownContainer: {
-    width: '100%',
+    width: "100%",
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: spacing.sm + 4,
     gap: 10,
   },
-  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  breakdownRow: { flexDirection: "row", justifyContent: "space-between" },
   breakdownLabel: { color: colors.textDim, fontSize: 13 },
-  breakdownVal: { color: colors.textHigh, fontSize: 13, fontWeight: '700' },
+  breakdownVal: { color: colors.textHigh, fontSize: 13, fontWeight: "700" },
 
-  badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
+  badgeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    justifyContent: "space-between",
+  },
   badgeCard: {
-    width: '48%',
+    width: "48%",
     backgroundColor: colors.bgCard,
     borderRadius: radius.lg,
     padding: spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
     borderColor: colors.border,
     gap: 8,
   },
-  badgeText: { color: colors.textHigh, fontSize: 13, fontWeight: '700' },
+  badgeText: { color: colors.textHigh, fontSize: 13, fontWeight: "700" },
 
   recCard: {
     backgroundColor: colors.bgCard,
@@ -267,7 +317,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  recHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  recHeader: { color: colors.accent, fontSize: 14, fontWeight: '700' },
+  recHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+  recHeader: { color: colors.accent, fontSize: 14, fontWeight: "700" },
   recBody: { color: colors.text, fontSize: 14, lineHeight: 20 },
 });

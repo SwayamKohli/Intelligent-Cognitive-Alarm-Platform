@@ -1,23 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Alert, ScrollView, ActivityIndicator, Platform, Switch
-} from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Moon, Sunrise, Download, FileText, Bell } from 'lucide-react-native';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
-import * as SecureStore from 'expo-secure-store';
-import api from '../lib/api';
-import { colors, radius, spacing, typography } from '../theme';
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  ActivityIndicator,
+  Platform,
+  Switch,
+} from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Moon, Sunrise, Download, FileText, Bell } from "lucide-react-native";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import * as SecureStore from "expo-secure-store";
+import api from "../lib/api";
+import { colors, radius, spacing, typography } from "../theme";
+import { registerForPushNotificationsAsync } from "../lib/notifications";
 
-const AVAILABLE_CHALLENGES = ['math', 'memory', 'pattern', 'logic', 'word_scramble', 'riddle', 'quiz'];
-const DIFFICULTY_LEVELS = ['beginner', 'easy', 'medium', 'hard', 'expert'];
+const AVAILABLE_CHALLENGES = [
+  "math",
+  "memory",
+  "pattern",
+  "logic",
+  "word_scramble",
+  "riddle",
+  "quiz",
+];
+const DIFFICULTY_LEVELS = ["beginner", "easy", "medium", "hard", "expert"];
 const TIMEZONES = [
-  { label: 'IST (Kolkata)', value: 'Asia/Kolkata' },
-  { label: 'UTC', value: 'UTC' },
-  { label: 'EST (New York)', value: 'America/New_York' },
-  { label: 'GMT (London)', value: 'Europe/London' },
+  { label: "IST (Kolkata)", value: "Asia/Kolkata" },
+  { label: "UTC", value: "UTC" },
+  { label: "EST (New York)", value: "America/New_York" },
+  { label: "GMT (London)", value: "Europe/London" },
 ];
 
 export default function ProfileScreen() {
@@ -26,9 +43,9 @@ export default function ProfileScreen() {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [downloadingExcel, setDownloadingExcel] = useState(false);
 
-  const [fullName, setFullName] = useState('');
-  const [difficulty, setDifficulty] = useState('medium');
-  const [timezone, setTimezone] = useState('UTC');
+  const [fullName, setFullName] = useState("");
+  const [difficulty, setDifficulty] = useState("medium");
+  const [timezone, setTimezone] = useState("UTC");
   const [preferredChallenges, setPreferredChallenges] = useState<string[]>([]);
 
   const [bedtime, setBedtime] = useState(new Date());
@@ -36,7 +53,9 @@ export default function ProfileScreen() {
   const [showBedtimePicker, setShowBedtimePicker] = useState(false);
   const [showWakeTimePicker, setShowWakeTimePicker] = useState(false);
 
-  // Notification Preferences State
+  // Added master push toggle
+  const [pushEnabled, setPushEnabled] = useState(false);
+
   const [notifPrefs, setNotifPrefs] = useState({
     bedtime_warning_enabled: true,
     bedtime_warning_minutes: 30,
@@ -49,42 +68,49 @@ export default function ProfileScreen() {
     fetchProfileAndSettings();
   }, []);
 
-  const parseTimeStringToDate = (timeStr?: string, defaultHours = 22, defaultMins = 0) => {
+  const parseTimeStringToDate = (
+    timeStr?: string,
+    defaultHours = 22,
+    defaultMins = 0,
+  ) => {
     const d = new Date();
     if (!timeStr) {
       d.setHours(defaultHours, defaultMins, 0, 0);
       return d;
     }
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const [hours, minutes] = timeStr.split(":").map(Number);
     d.setHours(hours || defaultHours, minutes || defaultMins, 0, 0);
     return d;
   };
 
   const formatTimeDateToString = (dateObj: Date) => {
-    const hours = dateObj.getHours().toString().padStart(2, '0');
-    const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+    const hours = dateObj.getHours().toString().padStart(2, "0");
+    const minutes = dateObj.getMinutes().toString().padStart(2, "0");
     return `${hours}:${minutes}`;
   };
 
   const fetchProfileAndSettings = async () => {
     try {
       setLoading(true);
-      
-      // Fetch Profile and Notifications in parallel
+
       const [profileRes, notifRes] = await Promise.all([
-        api.get('/users/profile'),
-        api.get('/notifications/preferences').catch(() => ({ data: null })) // Graceful fail if new user
+        api.get("/users/profile"),
+        api.get("/notifications/preferences").catch(() => ({ data: null })),
       ]);
 
       const data = profileRes.data;
-      setFullName(data.full_name || '');
-      setDifficulty(data.difficulty_preference || 'medium');
-      setTimezone(data.timezone || 'UTC');
-      setBedtime(parseTimeStringToDate(data.target_bedtime || data.bedtime, 22, 0));
-      setWakeTime(parseTimeStringToDate(data.target_wake_time || data.wake_time, 6, 0));
+      setFullName(data.full_name || "");
+      setDifficulty(data.difficulty_preference || "medium");
+      setTimezone(data.timezone || "UTC");
+      setBedtime(
+        parseTimeStringToDate(data.target_bedtime || data.bedtime, 22, 0),
+      );
+      setWakeTime(
+        parseTimeStringToDate(data.target_wake_time || data.wake_time, 6, 0),
+      );
 
       if (data.preferred_challenges) {
-        setPreferredChallenges(data.preferred_challenges.split(','));
+        setPreferredChallenges(data.preferred_challenges.split(","));
       } else {
         setPreferredChallenges([]);
       }
@@ -97,12 +123,42 @@ export default function ProfileScreen() {
           challenge_reminders: notifRes.data.challenge_reminders,
           weekly_sleep_report: notifRes.data.weekly_sleep_report,
         });
+
+        // If the backend has an FCM token stored, assume push is enabled
+        if (notifRes.data.fcm_token) {
+          setPushEnabled(true);
+        }
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error);
-      Alert.alert('Error', 'Could not load profile settings.');
+      console.error("Failed to fetch data:", error);
+      Alert.alert("Error", "Could not load profile settings.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePushToggle = async (value: boolean) => {
+    setPushEnabled(value);
+    if (value) {
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        try {
+          await api.post("/notifications/fcm-token", {
+            fcm_token: token,
+            device_type: Platform.OS === "ios" ? "ios" : "android",
+          });
+          Alert.alert("Success", "Push notifications enabled for this device.");
+        } catch (error) {
+          console.error("Failed to register push token", error);
+          Alert.alert(
+            "Error",
+            "Failed to register push notifications with the server.",
+          );
+          setPushEnabled(false);
+        }
+      } else {
+        setPushEnabled(false);
+      }
     }
   };
 
@@ -115,51 +171,55 @@ export default function ProfileScreen() {
         timezone,
         target_bedtime: formatTimeDateToString(bedtime),
         target_wake_time: formatTimeDateToString(wakeTime),
-        preferred_challenges: preferredChallenges.length > 0 ? preferredChallenges.join(',') : null,
+        preferred_challenges:
+          preferredChallenges.length > 0 ? preferredChallenges.join(",") : null,
       };
 
-      // Save both endpoints
       await Promise.all([
-        api.put('/users/profile', profilePayload),
-        api.put('/notifications/preferences', notifPrefs)
+        api.put("/users/profile", profilePayload),
+        api.put("/notifications/preferences", notifPrefs),
       ]);
-      
-      Alert.alert('Success', 'Profile and preferences updated.');
+
+      Alert.alert("Success", "Profile and preferences updated.");
     } catch (error: any) {
-      console.error('Failed to save profile:', error.response?.data || error.message);
-      Alert.alert('Error', 'Could not save profile changes.');
+      console.error(
+        "Failed to save profile:",
+        error.response?.data || error.message,
+      );
+      Alert.alert("Error", "Could not save profile changes.");
     } finally {
       setSaving(false);
     }
   };
 
-  const downloadReport = async (type: 'pdf' | 'excel') => {
+  const downloadReport = async (type: "pdf" | "excel") => {
     try {
-      if (type === 'pdf') setDownloadingPdf(true);
+      if (type === "pdf") setDownloadingPdf(true);
       else setDownloadingExcel(true);
 
-      const token = await SecureStore.getItemAsync('access_token');
+      const token = await SecureStore.getItemAsync("access_token");
       if (!token) throw new Error("No auth token");
 
-      const ext = type === 'pdf' ? 'pdf' : 'xlsx';
+      const ext = type === "pdf" ? "pdf" : "xlsx";
       const fileUri = `${FileSystem.documentDirectory}sleep_report_${Date.now()}.${ext}`;
 
       const { uri, status } = await FileSystem.downloadAsync(
         `${api.defaults.baseURL}/reports/export/${type}`,
         fileUri,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      if (status !== 200) throw new Error("Failed to generate report from server");
+      if (status !== 200)
+        throw new Error("Failed to generate report from server");
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri);
       } else {
-        Alert.alert('Downloaded', `File saved to ${uri}`);
+        Alert.alert("Downloaded", `File saved to ${uri}`);
       }
     } catch (error: any) {
-      console.error('Download error:', error);
-      Alert.alert('Error', 'Failed to download report.');
+      console.error("Download error:", error);
+      Alert.alert("Error", "Failed to download report.");
     } finally {
       setDownloadingPdf(false);
       setDownloadingExcel(false);
@@ -168,12 +228,14 @@ export default function ProfileScreen() {
 
   const toggleChallenge = (challenge: string) => {
     setPreferredChallenges((prev) =>
-      prev.includes(challenge) ? prev.filter((c) => c !== challenge) : [...prev, challenge]
+      prev.includes(challenge)
+        ? prev.filter((c) => c !== challenge)
+        : [...prev, challenge],
     );
   };
 
   const togglePref = (key: keyof typeof notifPrefs) => {
-    setNotifPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+    setNotifPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   if (loading) {
@@ -185,7 +247,10 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 50 }}
+    >
       <Text style={styles.header}>Profile Settings</Text>
 
       <Text style={styles.label}>Full Name</Text>
@@ -201,17 +266,27 @@ export default function ProfileScreen() {
       <View style={styles.timeRow}>
         <View style={styles.timeBox}>
           <Text style={styles.label}>Bedtime</Text>
-          <TouchableOpacity style={styles.timeBtn} onPress={() => setShowBedtimePicker(true)}>
+          <TouchableOpacity
+            style={styles.timeBtn}
+            onPress={() => setShowBedtimePicker(true)}
+          >
             <Moon color={colors.accent} size={16} />
-            <Text style={styles.timeText}>{formatTimeDateToString(bedtime)}</Text>
+            <Text style={styles.timeText}>
+              {formatTimeDateToString(bedtime)}
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.timeBox}>
           <Text style={styles.label}>Wake Time</Text>
-          <TouchableOpacity style={styles.timeBtn} onPress={() => setShowWakeTimePicker(true)}>
+          <TouchableOpacity
+            style={styles.timeBtn}
+            onPress={() => setShowWakeTimePicker(true)}
+          >
             <Sunrise color={colors.accent} size={16} />
-            <Text style={styles.timeText}>{formatTimeDateToString(wakeTime)}</Text>
+            <Text style={styles.timeText}>
+              {formatTimeDateToString(wakeTime)}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -220,9 +295,9 @@ export default function ProfileScreen() {
         <DateTimePicker
           value={bedtime}
           mode="time"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          display={Platform.OS === "ios" ? "spinner" : "default"}
           onChange={(e, d) => {
-            if (Platform.OS === 'android') setShowBedtimePicker(false);
+            if (Platform.OS === "android") setShowBedtimePicker(false);
             if (d) setBedtime(d);
           }}
         />
@@ -232,28 +307,45 @@ export default function ProfileScreen() {
         <DateTimePicker
           value={wakeTime}
           mode="time"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          display={Platform.OS === "ios" ? "spinner" : "default"}
           onChange={(e, d) => {
-            if (Platform.OS === 'android') setShowWakeTimePicker(false);
+            if (Platform.OS === "android") setShowWakeTimePicker(false);
             if (d) setWakeTime(d);
           }}
         />
       )}
 
-      {/* Notification Settings */}
       <View style={styles.settingHeaderRow}>
         <Bell color={colors.textHigh} size={20} />
-        <Text style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}>Notifications</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}>
+          Notifications
+        </Text>
       </View>
 
       <View style={styles.card}>
+        {/* NEW MASTER PUSH NOTIFICATION TOGGLE */}
+        <View style={styles.switchRow}>
+          <Text style={[styles.switchLabel, { color: colors.accent }]}>
+            Enable Push Notifications
+          </Text>
+          <Switch
+            value={pushEnabled}
+            onValueChange={handlePushToggle}
+            trackColor={{ false: colors.border, true: colors.accentBg }}
+            thumbColor={pushEnabled ? colors.accent : "#f4f3f4"}
+          />
+        </View>
+        <View style={styles.divider} />
+
         <View style={styles.switchRow}>
           <Text style={styles.switchLabel}>Bedtime Warning</Text>
           <Switch
             value={notifPrefs.bedtime_warning_enabled}
-            onValueChange={() => togglePref('bedtime_warning_enabled')}
+            onValueChange={() => togglePref("bedtime_warning_enabled")}
             trackColor={{ false: colors.border, true: colors.accentBg }}
-            thumbColor={notifPrefs.bedtime_warning_enabled ? colors.accent : '#f4f3f4'}
+            thumbColor={
+              notifPrefs.bedtime_warning_enabled ? colors.accent : "#f4f3f4"
+            }
           />
         </View>
 
@@ -266,19 +358,27 @@ export default function ProfileScreen() {
                 onPress={() =>
                   setNotifPrefs((prev) => ({
                     ...prev,
-                    bedtime_warning_minutes: Math.max(5, prev.bedtime_warning_minutes - 5),
+                    bedtime_warning_minutes: Math.max(
+                      5,
+                      prev.bedtime_warning_minutes - 5,
+                    ),
                   }))
                 }
               >
                 <Text style={styles.stepperBtnText}>−</Text>
               </TouchableOpacity>
-              <Text style={styles.stepperValue}>{notifPrefs.bedtime_warning_minutes} min</Text>
+              <Text style={styles.stepperValue}>
+                {notifPrefs.bedtime_warning_minutes} min
+              </Text>
               <TouchableOpacity
                 style={styles.stepperBtn}
                 onPress={() =>
                   setNotifPrefs((prev) => ({
                     ...prev,
-                    bedtime_warning_minutes: Math.min(120, prev.bedtime_warning_minutes + 5),
+                    bedtime_warning_minutes: Math.min(
+                      120,
+                      prev.bedtime_warning_minutes + 5,
+                    ),
                   }))
                 }
               >
@@ -294,33 +394,43 @@ export default function ProfileScreen() {
           <Text style={styles.switchLabel}>Morning Streak Alert</Text>
           <Switch
             value={notifPrefs.morning_streak_alert}
-            onValueChange={() => togglePref('morning_streak_alert')}
+            onValueChange={() => togglePref("morning_streak_alert")}
             trackColor={{ false: colors.border, true: colors.accentBg }}
-            thumbColor={notifPrefs.morning_streak_alert ? colors.accent : '#f4f3f4'}
+            thumbColor={
+              notifPrefs.morning_streak_alert ? colors.accent : "#f4f3f4"
+            }
           />
         </View>
         <View style={styles.switchRow}>
           <Text style={styles.switchLabel}>Challenge Reminders</Text>
           <Switch
             value={notifPrefs.challenge_reminders}
-            onValueChange={() => togglePref('challenge_reminders')}
+            onValueChange={() => togglePref("challenge_reminders")}
             trackColor={{ false: colors.border, true: colors.accentBg }}
-            thumbColor={notifPrefs.challenge_reminders ? colors.accent : '#f4f3f4'}
+            thumbColor={
+              notifPrefs.challenge_reminders ? colors.accent : "#f4f3f4"
+            }
           />
         </View>
         <View style={styles.switchRow}>
           <Text style={styles.switchLabel}>Weekly Sleep Report</Text>
           <Switch
             value={notifPrefs.weekly_sleep_report}
-            onValueChange={() => togglePref('weekly_sleep_report')}
+            onValueChange={() => togglePref("weekly_sleep_report")}
             trackColor={{ false: colors.border, true: colors.accentBg }}
-            thumbColor={notifPrefs.weekly_sleep_report ? colors.accent : '#f4f3f4'}
+            thumbColor={
+              notifPrefs.weekly_sleep_report ? colors.accent : "#f4f3f4"
+            }
           />
         </View>
       </View>
 
       <Text style={styles.sectionTitle}>Difficulty Preference</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipScroll}
+      >
         {DIFFICULTY_LEVELS.map((level) => {
           const active = difficulty === level;
           return (
@@ -329,14 +439,20 @@ export default function ProfileScreen() {
               style={[styles.chip, active && styles.chipActive]}
               onPress={() => setDifficulty(level)}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{level.toUpperCase()}</Text>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {level.toUpperCase()}
+              </Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
       <Text style={styles.sectionTitle}>Timezone</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipScroll}
+      >
         {TIMEZONES.map((tz) => {
           const active = timezone === tz.value;
           return (
@@ -345,14 +461,18 @@ export default function ProfileScreen() {
               style={[styles.chip, active && styles.chipActive]}
               onPress={() => setTimezone(tz.value)}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{tz.label}</Text>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {tz.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
       <Text style={styles.sectionTitle}>Allowed Challenges</Text>
-      <Text style={styles.subText}>Leave blank to allow all challenge types</Text>
+      <Text style={styles.subText}>
+        Leave blank to allow all challenge types
+      </Text>
       <View style={styles.grid}>
         {AVAILABLE_CHALLENGES.map((challenge) => {
           const active = preferredChallenges.includes(challenge);
@@ -363,25 +483,32 @@ export default function ProfileScreen() {
               onPress={() => toggleChallenge(challenge)}
             >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {challenge.replace('_', ' ').toUpperCase()}
+                {challenge.replace("_", " ").toUpperCase()}
               </Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.7 }]} onPress={handleSave} disabled={saving}>
-        <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Profile'}</Text>
+      <TouchableOpacity
+        style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+        onPress={handleSave}
+        disabled={saving}
+      >
+        <Text style={styles.saveBtnText}>
+          {saving ? "Saving…" : "Save Profile"}
+        </Text>
       </TouchableOpacity>
 
-      {/* NEW: Reports & Exports Section */}
       <Text style={[styles.sectionTitle, { marginTop: 40 }]}>Data Exports</Text>
-      <Text style={styles.subText}>Download your complete sleep and habit history</Text>
-      
+      <Text style={styles.subText}>
+        Download your complete sleep and habit history
+      </Text>
+
       <View style={styles.exportRow}>
-        <TouchableOpacity 
-          style={styles.exportBtn} 
-          onPress={() => downloadReport('pdf')}
+        <TouchableOpacity
+          style={styles.exportBtn}
+          onPress={() => downloadReport("pdf")}
           disabled={downloadingPdf}
         >
           {downloadingPdf ? (
@@ -394,9 +521,9 @@ export default function ProfileScreen() {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.exportBtn} 
-          onPress={() => downloadReport('excel')}
+        <TouchableOpacity
+          style={styles.exportBtn}
+          onPress={() => downloadReport("excel")}
           disabled={downloadingExcel}
         >
           {downloadingExcel ? (
@@ -409,20 +536,29 @@ export default function ProfileScreen() {
           )}
         </TouchableOpacity>
       </View>
-
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg },
-  centerContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' },
+  centerContainer: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   header: { ...typography.h1, marginTop: 40, marginBottom: spacing.lg },
-  sectionTitle: { ...typography.h2, fontSize: 16, marginTop: spacing.lg, marginBottom: spacing.sm },
-  label: { ...typography.caption, marginBottom: 6, fontWeight: '600' },
+  sectionTitle: {
+    ...typography.h2,
+    fontSize: 16,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  label: { ...typography.caption, marginBottom: 6, fontWeight: "600" },
   subText: { ...typography.caption, marginBottom: spacing.sm },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: "rgba(255,255,255,0.03)",
     color: colors.textHigh,
     padding: 15,
     borderRadius: radius.md,
@@ -431,65 +567,79 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  timeRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 15 },
+  timeRow: { flexDirection: "row", justifyContent: "space-between", gap: 15 },
   timeBox: { flex: 1 },
   timeBtn: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: "rgba(255,255,255,0.03)",
     padding: 15,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 8,
   },
-  timeText: { color: colors.textHigh, fontSize: 18, fontWeight: '700' },
+  timeText: { color: colors.textHigh, fontSize: 18, fontWeight: "700" },
 
-  settingHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.xl, marginBottom: spacing.sm },
+  settingHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
+  },
   card: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: "rgba(255,255,255,0.02)",
     borderRadius: radius.lg,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 },
-  switchLabel: { color: colors.textHigh, fontSize: 16, fontWeight: '500' },
+  switchRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  switchLabel: { color: colors.textHigh, fontSize: 16, fontWeight: "500" },
 
-  exportRow: { flexDirection: 'row', gap: 15, marginTop: 10, marginBottom: 20 },
+  exportRow: { flexDirection: "row", gap: 15, marginTop: 10, marginBottom: 20 },
   exportBtn: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: "rgba(255,255,255,0.03)",
     padding: 15,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.accentBorder,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 8,
   },
-  exportBtnText: { color: colors.accent, fontSize: 14, fontWeight: '600' },
+  exportBtnText: { color: colors.accent, fontSize: 14, fontWeight: "600" },
 
   chipScroll: { maxHeight: 50, marginBottom: 10 },
   chip: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: "rgba(255,255,255,0.03)",
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: radius.pill,
     marginRight: 10,
     borderWidth: 1,
     borderColor: colors.border,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
-  chipActive: { backgroundColor: colors.accentBg, borderColor: colors.accentBorder },
-  chipText: { color: colors.textDim, fontSize: 12, fontWeight: '700' },
+  chipActive: {
+    backgroundColor: colors.accentBg,
+    borderColor: colors.accentBorder,
+  },
+  chipText: { color: colors.textDim, fontSize: 12, fontWeight: "700" },
   chipTextActive: { color: colors.accent },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 5 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 5 },
   gridChip: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: "rgba(255,255,255,0.03)",
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: radius.md,
@@ -501,22 +651,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     padding: 18,
     borderRadius: radius.lg,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: spacing.xl,
   },
-  saveBtnText: { color: '#0A0A0B', fontSize: 16, fontWeight: '700' },
+  saveBtnText: { color: "#0A0A0B", fontSize: 16, fontWeight: "700" },
   minutesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 10,
   },
   minutesLabel: { color: colors.text, fontSize: 14 },
   stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: "rgba(255,255,255,0.03)",
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
@@ -528,10 +678,25 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 13,
     backgroundColor: colors.accentBg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  stepperBtnText: { color: colors.accent, fontSize: 16, fontWeight: '700', lineHeight: 18 },
-  stepperValue: { color: colors.textHigh, fontSize: 13, fontWeight: '700', minWidth: 52, textAlign: 'center' },
-  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 6 },
+  stepperBtnText: {
+    color: colors.accent,
+    fontSize: 16,
+    fontWeight: "700",
+    lineHeight: 18,
+  },
+  stepperValue: {
+    color: colors.textHigh,
+    fontSize: 13,
+    fontWeight: "700",
+    minWidth: 52,
+    textAlign: "center",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    marginVertical: 6,
+  },
 });

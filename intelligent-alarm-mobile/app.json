@@ -52,7 +52,8 @@
             "./assets/alarm-sound.mp3"
           ]
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "apiBaseUrl": "http://192.168.1.10:8000"
