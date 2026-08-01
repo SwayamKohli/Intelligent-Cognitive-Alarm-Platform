@@ -19,9 +19,7 @@ def register_snooze(db: Session, alarm: Alarm) -> Alarm:
 
 
 def calculate_smart_adaptive_alarm_time(
-    user: User,
-    base_time_str: str,
-    fatigue_score: float = 0.0
+    user: User, base_time_str: str, fatigue_score: float = 0.0
 ) -> str:
     """
     Smart Adaptive Alarm Logic:

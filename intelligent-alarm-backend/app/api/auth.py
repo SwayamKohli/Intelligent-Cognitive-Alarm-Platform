@@ -68,7 +68,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         email=user_in.email,
         password_hash=hashed_pwd,
         full_name=user_in.full_name,
-        role=UserRole.USER
+        role=UserRole.USER,
     )
     db.add(new_user)
     db.commit()
@@ -101,16 +101,13 @@ def google_oauth_login(payload: GoogleOAuthRequest, db: Session = Depends(get_db
     try:
         # 1. Cryptographically verify the token with Google
         idinfo = id_token.verify_oauth2_token(
-            payload.token,
-            google_requests.Request(),
-            GOOGLE_CLIENT_ID,
-            clock_skew_in_seconds=10
+            payload.token, google_requests.Request(), GOOGLE_CLIENT_ID, clock_skew_in_seconds=10
         )
 
         # 2. Extract verified user data directly from Google's payload
-        email = idinfo['email']
-        google_id = idinfo['sub']
-        full_name = idinfo.get('name', 'Google User')
+        email = idinfo["email"]
+        google_id = idinfo["sub"]
+        full_name = idinfo.get("name", "Google User")
 
     except ValueError:
         # Invalid token (expired, tampered with, or wrong client ID)
