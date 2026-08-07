@@ -5,6 +5,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from app.core.challenge_generator import generate_math_problem
+
 # from app.core.static_engines import get_local_random
 
 
