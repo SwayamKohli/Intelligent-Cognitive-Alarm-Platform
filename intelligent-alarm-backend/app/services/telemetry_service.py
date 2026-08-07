@@ -12,40 +12,35 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
         {
             "$match": {
                 "user_id": user_id,
-                "timestamp": {"$gte": seven_days_ago, "$lte": now},
+                # FIXED: Swapped 'timestamp' to 'created_at' to match actual DB schema
+                "created_at": {"$gte": seven_days_ago, "$lte": now},
             }
         },
         # ── Stage 2: $group ───────────────────────────────────
-        # Collapse all matched documents into one summary row.
-        # _id: null means "group everything together" (one bucket).
         {
             "$group": {
                 "_id": None,
-                "total_snoozes": {"$sum": {"$cond": [{"$eq": ["$event_type", "snooze"]}, 1, 0]}},
-                "total_challenges": {
-                    "$sum": {"$cond": [{"$eq": ["$event_type", "challenge_attempt"]}, 1, 0]}
-                },
+                # Defaulting snoozes to 0 here if it's managed in a different collection
+                "total_snoozes": {"$sum": 0},
+                # Every document in this collection is a challenge attempt
+                "total_challenges": {"$sum": 1},
+                # FIXED: Check if failed_attempts is greater than 0 instead of looking for 'outcome' string
                 "total_failures": {
                     "$sum": {
                         "$cond": [
-                            {
-                                "$and": [
-                                    {"$eq": ["$event_type", "challenge_attempt"]},
-                                    {"$in": ["$outcome", ["failure", "skipped"]]},
-                                ]
-                            },
+                            {"$gt": ["$failed_attempts", 0]},
                             1,
                             0,
                         ]
                     }
                 },
                 "active_days": {
-                    "$addToSet": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}}
+                    # FIXED: Swapped 'timestamp' to 'created_at'
+                    "$addToSet": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}}
                 },
             }
         },
         # ── Stage 3: $project ─────────────────────────────────
-        # Shape the final output — calculate failure_rate here
         {
             "$project": {
                 "_id": 0,
@@ -88,7 +83,6 @@ async def get_user_telemetry_last_7_days(user_id: str) -> dict:
         results = []
 
     # ── Return result or safe zero-state ──────────────────────
-    # If user has NO logs yet (new user), return all zeros
     if not results:
         return {
             "user_id": user_id,

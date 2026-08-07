@@ -9,12 +9,9 @@ import MainTabNavigator from './src/screens/MainTabNavigator';
 import CreateAlarmScreen from './src/screens/CreateAlarmScreen';
 import RingingScreen from './src/screens/RingingScreen';
 
-// Import Admin and Coach Screens!
+// Import Admin and Coach Screens
 import AdminScreen from './src/screens/AdminScreen';
 import CoachScreen from './src/screens/CoachScreen';
-
-// Import our new native notification permission helper
-import { registerForPushNotificationsAsync } from './src/lib/notifications';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,10 +19,7 @@ export default function App() {
   const navigationRef = useNavigationContainerRef();
 
   useEffect(() => {
-    // 1. Request OS notification permissions on app launch
-    registerForPushNotificationsAsync();
-
-    // 2. Global Lock-Screen Interceptor: Catches when a user taps an OS alarm notification
+    // Global Lock-Screen Interceptor: Catches when a user taps an OS alarm notification
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data;
       

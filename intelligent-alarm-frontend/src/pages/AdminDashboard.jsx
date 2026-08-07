@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 import api from "../lib/api";
 import { staggerContainer, staggerItem } from "../lib/motion";
@@ -147,8 +153,15 @@ function AdminDashboard() {
                 <>
                   <div className="chart-wrapper">
                     <ResponsiveContainer width="100%" height={280}>
-                      <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                      <BarChart
+                        data={chartData}
+                        margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="rgba(255,255,255,0.06)"
+                          vertical={false}
+                        />
                         <XAxis
                           dataKey="engine"
                           stroke="var(--text-dim)"
@@ -177,9 +190,19 @@ function AdminDashboard() {
                             name === "failureRate" ? "Failure rate" : name,
                           ]}
                         />
-                        <Bar dataKey="failureRate" radius={[6, 6, 0, 0]} fill="url(#barGradient)" />
+                        <Bar
+                          dataKey="failureRate"
+                          radius={[6, 6, 0, 0]}
+                          fill="url(#barGradient)"
+                        />
                         <defs>
-                          <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                          <linearGradient
+                            id="barGradient"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
                             <stop offset="0%" stopColor="#f4c542" />
                             <stop offset="100%" stopColor="#b8862b" />
                           </linearGradient>
@@ -210,8 +233,8 @@ function AdminDashboard() {
                             e.failure_rate_percentage > 40
                               ? "rate-badge high"
                               : e.failure_rate_percentage > 20
-                              ? "rate-badge mid"
-                              : "rate-badge low"
+                                ? "rate-badge mid"
+                                : "rate-badge low"
                           }
                         >
                           {e.failure_rate_percentage}%

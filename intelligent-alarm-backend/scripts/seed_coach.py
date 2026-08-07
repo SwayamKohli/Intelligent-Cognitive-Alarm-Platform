@@ -1,13 +1,15 @@
 import sys
-import os
+
+# import os
 
 sys.path.append(".")
 
 from app.database import SessionLocal
 from app.models.user import User
-from app.models.alarm import Alarm
-from app.models.habit import Habit
-from app.models.notification import NotificationPreference
+
+# from app.models.alarm import Alarm
+# from app.models.habit import Habit
+# from app.models.notification import NotificationPreference
 from app.core.security import get_password_hash
 from sqlalchemy import text  # Need this for raw SQL cleanup
 

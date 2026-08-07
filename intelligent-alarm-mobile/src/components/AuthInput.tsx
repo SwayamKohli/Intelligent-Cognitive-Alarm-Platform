@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, TextInput, StyleSheet, TextInputProps } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import React from "react";
+import { View, TextInput, StyleSheet, TextInputProps } from "react-native";
+import { colors, radius, spacing } from "../theme";
 
 type Props = TextInputProps & {
   icon: React.ReactNode;
@@ -21,9 +21,9 @@ export default function AuthInput({ icon, ...inputProps }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.03)",
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,

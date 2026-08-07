@@ -2,11 +2,15 @@ import os
 import sys
 from dotenv import load_dotenv
 from passlib.context import CryptContext
-
-sys.path.append(os.getcwd())
-
+from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models.user import User, UserRole
+from app.core.security import get_password_hash
+import app.models.notification
+import app.models.habit
+import app.models.alarm
+
+sys.path.append(os.getcwd())
 from app.models.alarm import Alarm
 from app.models.habit import Habit, HabitLog
 

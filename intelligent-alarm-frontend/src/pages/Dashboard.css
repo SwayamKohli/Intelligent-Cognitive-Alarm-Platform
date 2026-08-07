@@ -58,7 +58,9 @@
   font-size: 14.5px;
   font-family: var(--sans);
   text-align: left;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
 }
 
 .nav-icon {
@@ -685,7 +687,9 @@
   border: 1px solid var(--border-strong);
   background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
   flex-shrink: 0;
 }
 
@@ -702,7 +706,9 @@
   height: 18px;
   border-radius: 50%;
   background: var(--text-dim);
-  transition: transform 0.2s, background 0.2s;
+  transition:
+    transform 0.2s,
+    background 0.2s;
 }
 
 .toggle-switch.on .toggle-switch-thumb {
@@ -783,7 +789,11 @@
 
 .hero-card {
   grid-column: 1 / -1;
-  background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.01)
+  );
   border-left: 4px solid var(--accent);
   padding: 32px;
 }

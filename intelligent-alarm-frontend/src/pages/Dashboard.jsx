@@ -16,6 +16,9 @@ import { staggerContainer, staggerItem } from "../lib/motion";
 import "./Dashboard.css";
 import AnalyticsPanel from "./AnalyticsPanel";
 
+// Import the new Firebase helper
+import { requestFirebaseNotificationPermission } from "../lib/firebase";
+
 const NAV_ITEMS = [
   { key: "overview", label: "Dashboard", icon: LayoutDashboard },
   { key: "alarms", label: "My Alarms", icon: AlarmClock },
@@ -24,10 +27,16 @@ const NAV_ITEMS = [
 ];
 
 const AVAILABLE_CHALLENGES = [
-  "math", "memory", "pattern", "logic", "word_scramble", "riddle", "quiz",
+  "math",
+  "memory",
+  "pattern",
+  "logic",
+  "word_scramble",
+  "riddle",
+  "quiz",
 ];
 
-function ToggleSwitch({ checked, onChange, label }) {
+function ToggleSwitch({ checked, onChange, label, disabled = false }) {
   return (
     <div className="toggle-pref-row">
       <span className="toggle-pref-label">{label}</span>
@@ -36,6 +45,11 @@ function ToggleSwitch({ checked, onChange, label }) {
         className={checked ? "toggle-switch on" : "toggle-switch"}
         onClick={() => onChange(!checked)}
         aria-pressed={checked}
+        disabled={disabled}
+        style={{
+          opacity: disabled ? 0.5 : 1,
+          cursor: disabled ? "not-allowed" : "pointer",
+        }}
       >
         <span className="toggle-switch-thumb" />
       </button>
@@ -73,29 +87,34 @@ function Dashboard() {
   const [profileDifficulty, setProfileDifficulty] = useState("medium");
   const [targetBedtime, setTargetBedtime] = useState("22:00");
   const [targetWakeTime, setTargetWakeTime] = useState("06:00");
-  const [globalPreferredChallenges, setGlobalPreferredChallenges] = useState([]);
+  const [globalPreferredChallenges, setGlobalPreferredChallenges] = useState(
+    [],
+  );
   const [savingProfile, setSavingProfile] = useState(false);
   const [toast, setToast] = useState(null);
   const [habitScore, setHabitScore] = useState(null);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [recommendations, setRecommendations] = useState({
-  sleep: "",
-  wake_up: "",
-  habit: "",
-  productivity: "",
-});
+    sleep: "",
+    wake_up: "",
+    habit: "",
+    productivity: "",
+  });
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
+  // Added fcm_enabled to local state
+  const [fcmEnabled, setFcmEnabled] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({
-  bedtime_warning_enabled: true,
-  bedtime_warning_minutes: 30,
-  morning_streak_alert: true,
-  challenge_reminders: false,
-  weekly_sleep_report: true,
-});
+    bedtime_warning_enabled: true,
+    bedtime_warning_minutes: 30,
+    morning_streak_alert: true,
+    challenge_reminders: false,
+    weekly_sleep_report: true,
+  });
 
-const [savingNotifications, setSavingNotifications] = useState(false);
+  const [savingNotifications, setSavingNotifications] = useState(false);
 
-  // Live clock — ticks every 30s, which is plenty for a HUD display
+  // Live clock
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000 * 30);
@@ -118,27 +137,32 @@ const [savingNotifications, setSavingNotifications] = useState(false);
       setLoadingAlarms(false);
     }
   };
+
   const fetchHabitScore = async () => {
-  setLoadingAnalytics(true);
-  try {
-    const { data } = await api.get("/analytics/habit-score");
-    setHabitScore(data);
-  } catch (error) {
-    console.log(error);
-  } finally {
-    setLoadingAnalytics(false);
-  }
-};
+    setLoadingAnalytics(true);
+    try {
+      // ?t=${Date.now()} forces the browser to bypass its local HTTP cache
+      const { data } = await api.get(`/analytics/habit-score?t=${Date.now()}`);
+      setHabitScore(data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
   const fetchRecommendations = async () => {
     try {
-      const { data } = await api.get("/analytics/recommendations");
+      // ?t=${Date.now()} forces the browser to bypass its local HTTP cache
+      const { data } = await api.get(
+        `/analytics/recommendations?t=${Date.now()}`,
+      );
 
-      // Safely extract the string if Groq returns a nested object
       const safeExtract = (item) => {
-        if (typeof item === 'object' && item !== null) {
+        if (typeof item === "object" && item !== null) {
           return item.advice || JSON.stringify(item);
         }
-        return typeof item === 'string' ? item : 'No suggestions available.';
+        return typeof item === "string" ? item : "No suggestions available.";
       };
 
       setRecommendations({
@@ -151,14 +175,19 @@ const [savingNotifications, setSavingNotifications] = useState(false);
       console.log(error);
     }
   };
+
   const fetchNotificationSettings = async () => {
-  try {
-    const { data } = await api.get("/notifications/preferences");
-    setNotificationSettings(data);
-  } catch (error) {
-    console.error(error);
-  }
-};
+    try {
+      const { data } = await api.get("/notifications/preferences");
+      setNotificationSettings(data);
+      if (data.fcm_token) {
+        setFcmEnabled(true);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const fetchProfile = async () => {
     try {
       const { data } = await api.get("/users/profile");
@@ -203,7 +232,7 @@ const [savingNotifications, setSavingNotifications] = useState(false);
     setGlobalPreferredChallenges((prev) =>
       prev.includes(challenge)
         ? prev.filter((c) => c !== challenge)
-        : [...prev, challenge]
+        : [...prev, challenge],
     );
   };
 
@@ -219,13 +248,6 @@ const [savingNotifications, setSavingNotifications] = useState(false);
     }
   };
 
-  // Quick Actions: your API has no PUT /alarms/{id} route, so there's no way
-  // to flip is_active directly — only GET/POST /alarms/, POST /alarms/snooze,
-  // and DELETE /alarms/{id} exist. Using the one write action that's actually
-  // available: snooze the next alarm right from the HUD.
-  // NOTE: guessing SnoozeRequest's field names (alarm_id + snooze_minutes) —
-  // check your SnoozeRequest schema in /docs and adjust the payload keys below
-  // if they don't match.
   const handleQuickSnooze = async (alarm) => {
     setTogglingAlarmId(alarm.id);
     try {
@@ -254,23 +276,47 @@ const [savingNotifications, setSavingNotifications] = useState(false);
     fetchNotificationSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
+
   const handleSaveNotifications = async () => {
-  setSavingNotifications(true);
+    setSavingNotifications(true);
+    try {
+      await api.put("/notifications/preferences", notificationSettings);
+      showToast("Notification settings updated");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to update notification settings", "error");
+    } finally {
+      setSavingNotifications(false);
+    }
+  };
 
-  try {
-    await api.put(
-      "/notifications/preferences",
-      notificationSettings
-    );
+  // --- NEW: Handle FCM Push Notification Toggle ---
+  const handleFcmToggle = async (enabled) => {
+    if (enabled) {
+      const token = await requestFirebaseNotificationPermission();
+      if (token) {
+        try {
+          await api.post("/notifications/fcm-token", {
+            fcm_token: token,
+            device_type: "web",
+          });
+          setFcmEnabled(true);
+          showToast("Push notifications enabled!");
+        } catch (error) {
+          console.error("Failed to save FCM token", error);
+          showToast("Server error saving notification settings.", "error");
+        }
+      } else {
+        showToast("Permission denied by browser.", "error");
+      }
+    } else {
+      // If turning off, we would ideally revoke the token on the backend,
+      // but for now we just visually disable it.
+      setFcmEnabled(false);
+      showToast("Push notifications disabled.");
+    }
+  };
 
-    showToast("Notification settings updated");
-  } catch (error) {
-    console.error(error);
-    showToast("Failed to update notification settings", "error");
-  } finally {
-    setSavingNotifications(false);
-  }
-};
   const handleAlarmCreated = () => {
     setShowCreateAlarm(false);
     fetchAlarms();
@@ -280,7 +326,7 @@ const [savingNotifications, setSavingNotifications] = useState(false);
   const fetchChallenge = async (alarmId) => {
     try {
       const { data } = await api.get(
-        `/challenges/next?alarm_id=${alarmId}&challenge_type=random`
+        `/challenges/next?alarm_id=${alarmId}&challenge_type=random`,
       );
       setCurrentChallenge(data);
       setCurrentAlarmId(alarmId);
@@ -293,14 +339,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
-    // Clear any Authorization header set on the shared axios instance so a
-    // stray in-flight request can't silently re-auth after logout.
     if (api?.defaults?.headers?.common?.Authorization) {
       delete api.defaults.headers.common.Authorization;
     }
-    // navigate() alone was leaving the app on a stale Dashboard render until
-    // a manual refresh — forcing a hard redirect guarantees the app remounts
-    // cleanly on /login with no leftover auth state.
     window.location.href = "/login";
   };
 
@@ -318,7 +359,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
   const handleDownloadPdf = async () => {
     setDownloadingPdf(true);
     try {
-      const response = await api.get("/reports/export/pdf", { responseType: "blob" });
+      const response = await api.get("/reports/export/pdf", {
+        responseType: "blob",
+      });
       triggerDownload(new Blob([response.data]), "Sleep_Report.pdf");
     } catch (error) {
       console.error(error);
@@ -331,7 +374,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
   const handleExportExcel = async () => {
     setDownloadingExcel(true);
     try {
-      const response = await api.get("/reports/export/excel", { responseType: "blob" });
+      const response = await api.get("/reports/export/excel", {
+        responseType: "blob",
+      });
       triggerDownload(new Blob([response.data]), "Telemetry_Report.xlsx");
     } catch (error) {
       console.error(error);
@@ -347,7 +392,10 @@ const [savingNotifications, setSavingNotifications] = useState(false);
     .filter((a) => a.is_active)
     .sort((a, b) => a.time.localeCompare(b.time))[0];
 
-  const clockString = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const clockString = now.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   const dateString = now.toLocaleDateString([], {
     weekday: "long",
     month: "long",
@@ -390,7 +438,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
               return (
                 <button
                   key={item.key}
-                  className={activeTab === item.key ? "nav-btn active" : "nav-btn"}
+                  className={
+                    activeTab === item.key ? "nav-btn active" : "nav-btn"
+                  }
                   onClick={() => setActiveTab(item.key)}
                 >
                   <span className="nav-icon">
@@ -443,8 +493,10 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                       </h2>
                       <p>
                         You are currently on a{" "}
-                        <span className="highlight-text">{currentStreak}-day</span> wake-up
-                        streak.{" "}
+                        <span className="highlight-text">
+                          {currentStreak}-day
+                        </span>{" "}
+                        wake-up streak.{" "}
                         {currentStreak > 2
                           ? "You're building incredible momentum."
                           : "Let's build that momentum."}
@@ -463,7 +515,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                   {nextAlarm ? (
                     <>
                       <div className="next-alarm-display">
-                        <div className="next-alarm-time">{nextAlarm.time.slice(0, 5)}</div>
+                        <div className="next-alarm-time">
+                          {nextAlarm.time.slice(0, 5)}
+                        </div>
                         <div className="next-alarm-details">
                           <p>{nextAlarm.label}</p>
                           <span className="widget-subtext">
@@ -479,12 +533,19 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                           disabled={togglingAlarmId === nextAlarm.id}
                           onClick={() => handleQuickSnooze(nextAlarm)}
                         >
-                          {togglingAlarmId === nextAlarm.id ? "Snoozing…" : "Snooze"}
+                          {togglingAlarmId === nextAlarm.id
+                            ? "Snoozing…"
+                            : "Snooze"}
                         </button>
                       </div>
                     </>
                   ) : (
-                    <div className="widget-value widget-value-empty">No alarms set</div>
+                    <div
+                      className="widget-value"
+                      style={{ fontSize: "20px", color: "var(--text-dim)" }}
+                    >
+                      No alarms set
+                    </div>
                   )}
                 </div>
 
@@ -492,7 +553,12 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                   <h3>Habit Pulse</h3>
                   <div className="widget-value">
                     {Math.round(score)}
-                    <span className="widget-value-suffix">/100</span>
+                    <span
+                      className="widget-value-suffix"
+                      style={{ fontSize: "18px", color: "var(--text-dim)" }}
+                    >
+                      /100
+                    </span>
                   </div>
                   <p className="widget-subtext">Overall adherence score</p>
                 </div>
@@ -540,7 +606,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                     >
                       <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
                       <option value="UTC">UTC</option>
-                      <option value="America/New_York">America/New_York (EST)</option>
+                      <option value="America/New_York">
+                        America/New_York (EST)
+                      </option>
                       <option value="Europe/London">Europe/London (GMT)</option>
                     </select>
                   </div>
@@ -567,10 +635,13 @@ const [savingNotifications, setSavingNotifications] = useState(false);
 
                 <div className="field-group">
                   <label>Global Allowed Challenges</label>
-                  <p className="field-hint">Leave blank to allow all challenge types</p>
+                  <p className="field-hint">
+                    Leave blank to allow all challenge types
+                  </p>
                   <div className="chip-grid">
                     {AVAILABLE_CHALLENGES.map((challenge) => {
-                      const active = globalPreferredChallenges.includes(challenge);
+                      const active =
+                        globalPreferredChallenges.includes(challenge);
                       return (
                         <motion.button
                           type="button"
@@ -598,36 +669,64 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                 <div className="glass-card notification-card">
                   <h3>Notification Preferences</h3>
 
+                  {/* NEW MASTER TOGGLE FOR PUSH NOTIFICATIONS */}
+                  <div
+                    style={{
+                      marginBottom: "16px",
+                      paddingBottom: "16px",
+                      borderBottom: "1px solid var(--border)",
+                    }}
+                  >
+                    <ToggleSwitch
+                      label="Enable Browser Push Notifications (FCM)"
+                      checked={fcmEnabled}
+                      onChange={handleFcmToggle}
+                    />
+                  </div>
+
                   <ToggleSwitch
                     label="Bedtime warning"
                     checked={notificationSettings.bedtime_warning_enabled}
                     onChange={(val) =>
-                      setNotificationSettings((prev) => ({ ...prev, bedtime_warning_enabled: val }))
+                      setNotificationSettings((prev) => ({
+                        ...prev,
+                        bedtime_warning_enabled: val,
+                      }))
                     }
                   />
 
                   {notificationSettings.bedtime_warning_enabled && (
                     <div className="minutes-row">
-                      <span className="toggle-pref-label">Warn me before bedtime</span>
+                      <span className="toggle-pref-label">
+                        Warn me before bedtime
+                      </span>
                       <div className="minutes-stepper">
                         <button
                           type="button"
                           onClick={() =>
                             setNotificationSettings((prev) => ({
                               ...prev,
-                              bedtime_warning_minutes: Math.max(5, prev.bedtime_warning_minutes - 5),
+                              bedtime_warning_minutes: Math.max(
+                                5,
+                                prev.bedtime_warning_minutes - 5,
+                              ),
                             }))
                           }
                         >
                           −
                         </button>
-                        <span>{notificationSettings.bedtime_warning_minutes} min</span>
+                        <span>
+                          {notificationSettings.bedtime_warning_minutes} min
+                        </span>
                         <button
                           type="button"
                           onClick={() =>
                             setNotificationSettings((prev) => ({
                               ...prev,
-                              bedtime_warning_minutes: Math.min(120, prev.bedtime_warning_minutes + 5),
+                              bedtime_warning_minutes: Math.min(
+                                120,
+                                prev.bedtime_warning_minutes + 5,
+                              ),
                             }))
                           }
                         >
@@ -641,7 +740,10 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                     label="Morning streak alerts"
                     checked={notificationSettings.morning_streak_alert}
                     onChange={(val) =>
-                      setNotificationSettings((prev) => ({ ...prev, morning_streak_alert: val }))
+                      setNotificationSettings((prev) => ({
+                        ...prev,
+                        morning_streak_alert: val,
+                      }))
                     }
                   />
 
@@ -649,7 +751,10 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                     label="Challenge reminders"
                     checked={notificationSettings.challenge_reminders}
                     onChange={(val) =>
-                      setNotificationSettings((prev) => ({ ...prev, challenge_reminders: val }))
+                      setNotificationSettings((prev) => ({
+                        ...prev,
+                        challenge_reminders: val,
+                      }))
                     }
                   />
 
@@ -657,7 +762,10 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                     label="Weekly sleep report"
                     checked={notificationSettings.weekly_sleep_report}
                     onChange={(val) =>
-                      setNotificationSettings((prev) => ({ ...prev, weekly_sleep_report: val }))
+                      setNotificationSettings((prev) => ({
+                        ...prev,
+                        weekly_sleep_report: val,
+                      }))
                     }
                   />
 
@@ -668,7 +776,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                     whileTap={{ scale: 0.97 }}
                     style={{ marginTop: "16px" }}
                   >
-                    {savingNotifications ? "Saving…" : "Save Notification Settings"}
+                    {savingNotifications
+                      ? "Saving…"
+                      : "Save Notification Settings"}
                   </motion.button>
                 </div>
               </motion.div>
@@ -702,10 +812,14 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                         whileHover={{ y: -2 }}
                       >
                         <div className="alarm-info">
-                          <span className={`alarm-dot ${alarm.is_active ? "on" : "off"}`} />
+                          <span
+                            className={`alarm-dot ${alarm.is_active ? "on" : "off"}`}
+                          />
                           <div>
                             <strong>{alarm.label}</strong>
-                            <p>{alarm.time?.slice(0, 5)} · {alarm.alarm_type}</p>
+                            <p>
+                              {alarm.time?.slice(0, 5)} · {alarm.alarm_type}
+                            </p>
                           </div>
                         </div>
                         <div className="alarm-actions">
@@ -769,7 +883,10 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                       recommendations={recommendations}
                     />
 
-                    <div className="analytics-section" style={{ marginTop: "32px" }}>
+                    <div
+                      className="analytics-section"
+                      style={{ marginTop: "32px" }}
+                    >
                       <h3>Reports & Exports</h3>
 
                       <div className="export-row">
@@ -780,7 +897,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                           whileTap={{ scale: 0.97 }}
                         >
                           <FileText size={16} />
-                          {downloadingPdf ? "Preparing…" : "Download PDF Report"}
+                          {downloadingPdf
+                            ? "Preparing…"
+                            : "Download PDF Report"}
                         </motion.button>
 
                         <motion.button
@@ -790,7 +909,9 @@ const [savingNotifications, setSavingNotifications] = useState(false);
                           whileTap={{ scale: 0.97 }}
                         >
                           <Sheet size={16} />
-                          {downloadingExcel ? "Preparing…" : "Export Excel Telemetry"}
+                          {downloadingExcel
+                            ? "Preparing…"
+                            : "Export Excel Telemetry"}
                         </motion.button>
                       </div>
                     </div>

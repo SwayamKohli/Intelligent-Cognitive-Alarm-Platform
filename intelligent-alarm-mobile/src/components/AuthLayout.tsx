@@ -1,23 +1,33 @@
-import React from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { AlarmClock } from 'lucide-react-native';
-import { colors, spacing } from '../theme';
+import React from "react";
+import {
+  View,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { AlarmClock } from "lucide-react-native";
+import { colors, spacing } from "../theme";
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={['rgba(244,197,66,0.10)', 'rgba(10,10,11,0)']}
+        colors={["rgba(244,197,66,0.10)", "rgba(10,10,11,0)"]}
         style={styles.glowTop}
       />
       <LinearGradient
-        colors={['rgba(184,134,43,0.08)', 'rgba(10,10,11,0)']}
+        colors={["rgba(184,134,43,0.08)", "rgba(10,10,11,0)"]}
         style={styles.glowBottom}
       />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.flex}
       >
         <ScrollView
@@ -40,11 +50,11 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: spacing.lg,
   },
   glowTop: {
-    position: 'absolute',
+    position: "absolute",
     top: -100,
     left: -50,
     width: 400,
@@ -52,7 +62,7 @@ const styles = StyleSheet.create({
     borderRadius: 200,
   },
   glowBottom: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -120,
     right: -60,
     width: 380,
@@ -60,7 +70,7 @@ const styles = StyleSheet.create({
     borderRadius: 190,
   },
   iconWrap: {
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: spacing.md,
   },
 });
