@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+# import numpy as np
 import joblib
 import os
 from sklearn.model_selection import train_test_split
@@ -58,5 +58,5 @@ os.makedirs("models", exist_ok=True)
 artifact_path = "models/adaptive_model_v2.pkl"
 joblib.dump(model_artifact, artifact_path)
 
-print(f"\nV2 ML Pipeline complete. Exported binary artifact cleanly.")
+print("\nV2 ML Pipeline complete. Exported binary artifact cleanly.")
 print(f"Target Destination: {artifact_path}")

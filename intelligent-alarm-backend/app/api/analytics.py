@@ -28,6 +28,7 @@ async def get_habit_score(
     if cached_data:
         return json.loads(cached_data)
 
+    # 🚨 THE STRING CAST IS ALREADY HERE! The database bug is happening downstream.
     telemetry = await get_user_telemetry_last_7_days(str(current_user.id))
 
     days_active = telemetry.get("days_active", 0)

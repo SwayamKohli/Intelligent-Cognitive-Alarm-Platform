@@ -1,13 +1,11 @@
 import sys
 import os
-import hashlib
-import random
 
 # Add parent directory to path so we can import app modules
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from app.core.challenge_generator import generate_math_problem
-from app.core.static_engines import get_local_random
+# from app.core.static_engines import get_local_random
 
 
 def run_demonstration():
