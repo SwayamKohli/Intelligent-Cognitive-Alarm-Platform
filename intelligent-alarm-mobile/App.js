@@ -10,8 +10,6 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import MainTabNavigator from './src/screens/MainTabNavigator';
 import CreateAlarmScreen from './src/screens/CreateAlarmScreen';
 import RingingScreen from './src/screens/RingingScreen';
-
-// Import Admin and Coach Screens
 import AdminScreen from './src/screens/AdminScreen';
 import CoachScreen from './src/screens/CoachScreen';
 
@@ -23,13 +21,10 @@ export default function App() {
   const [initialRoute, setInitialRoute] = useState('Login');
 
   useEffect(() => {
-    // 1. Check for existing login session
     async function checkSession() {
       try {
         const token = await SecureStore.getItemAsync('access_token');
-        if (token) {
-          setInitialRoute('Dashboard');
-        }
+        if (token) setInitialRoute('Dashboard');
       } catch (error) {
         console.error('Error checking session:', error);
       } finally {
@@ -39,28 +34,36 @@ export default function App() {
     
     checkSession();
 
-    // 2. Global Lock-Screen Interceptor
+    // 1. Handles notifications when app is in Foreground/Background
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data;
-      
-      if (data && data.alarmId) {
-        console.log(`[Notification Interceptor] Tapped alarm ID: ${data.alarmId}. Routing to RingingScreen...`);
-        
-        if (navigationRef.isReady()) {
-          navigationRef.navigate('Ringing', { 
-            alarmId: data.alarmId, 
-            label: data.label || 'Cognitive Alarm' 
-          });
-        }
+      if (data && data.alarmId && navigationRef.isReady()) {
+        navigationRef.navigate('Ringing', { 
+          alarmId: data.alarmId, 
+          label: data.label || 'Cognitive Alarm' 
+        });
       }
     });
 
-    return () => {
-      responseSubscription.remove();
-    };
+    return () => responseSubscription.remove();
   }, []);
 
-  // Show a dark loading screen while checking the secure store
+  // 2. Handles notifications when app is Dead (Cold Start)
+  const handleNavigationReady = async () => {
+    const response = await Notifications.getLastNotificationResponseAsync();
+    const data = response?.notification.request.content.data;
+    
+    if (data && data.alarmId) {
+      // Slight delay ensures the router is fully mounted before jumping to the alarm screen
+      setTimeout(() => {
+        navigationRef.navigate('Ringing', { 
+          alarmId: data.alarmId, 
+          label: data.label || 'Cognitive Alarm' 
+        });
+      }, 100);
+    }
+  };
+
   if (!isReady) {
     return (
       <View style={{ flex: 1, backgroundColor: '#0A0A0B', justifyContent: 'center', alignItems: 'center' }}>
@@ -70,7 +73,7 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} onReady={handleNavigationReady}>
       <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
