@@ -35,7 +35,8 @@
         "android.permission.WAKE_LOCK",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE"
-      ]
+      ],
+      "package": "com.swayamkohli.intelligentalarmmobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -49,14 +50,17 @@
           "icon": "./assets/icon.png",
           "color": "#FFD700",
           "sounds": [
-            "./assets/alarm-sound.mp3"
+            "./assets/alarm_sound.mp3"
           ]
         }
       ],
       "@react-native-google-signin/google-signin"
     ],
     "extra": {
-      "apiBaseUrl": "http://10.209.250.173:8000"
+      "apiBaseUrl": "https://intelligent-alarm-backend.onrender.com",
+      "eas": {
+        "projectId": "215e6f6b-6464-497e-a65d-bb1df29fb83e"
+      }
     }
   }
 }
