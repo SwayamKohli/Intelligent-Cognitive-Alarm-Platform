@@ -48,7 +48,7 @@ export default function RingingScreen({ route, navigation }: any) {
   const playAlarmSound = async () => {
     try {
       const { sound } = await Audio.Sound.createAsync(
-        require("../../assets/alarm-sound.mp3"),
+        require("../../assets/alarm_sound.mp3"),
         { shouldPlay: true, isLooping: true, volume: 1.0 },
       );
       soundRef.current = sound;
