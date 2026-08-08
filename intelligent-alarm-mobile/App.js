@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
+import * as SecureStore from 'expo-secure-store';
 
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
@@ -17,9 +19,27 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   const navigationRef = useNavigationContainerRef();
+  const [isReady, setIsReady] = useState(false);
+  const [initialRoute, setInitialRoute] = useState('Login');
 
   useEffect(() => {
-    // Global Lock-Screen Interceptor: Catches when a user taps an OS alarm notification
+    // 1. Check for existing login session
+    async function checkSession() {
+      try {
+        const token = await SecureStore.getItemAsync('access_token');
+        if (token) {
+          setInitialRoute('Dashboard');
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        setIsReady(true);
+      }
+    }
+    
+    checkSession();
+
+    // 2. Global Lock-Screen Interceptor
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data;
       
@@ -40,9 +60,18 @@ export default function App() {
     };
   }, []);
 
+  // Show a dark loading screen while checking the secure store
+  if (!isReady) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0A0A0B', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#FFD700" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         

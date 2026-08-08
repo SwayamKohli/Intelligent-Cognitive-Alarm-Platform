@@ -11,7 +11,7 @@ import {
 import { LogOut, Plus, Play, Trash2 } from "lucide-react-native";
 import api from "../lib/api";
 import * as SecureStore from "expo-secure-store";
-import { cancelNativeAlarm } from "../lib/notifications";
+import { registerForPushNotificationsAsync, cancelNativeAlarm } from "../lib/notifications";
 import { colors, radius, spacing, typography } from "../theme";
 
 export default function DashboardScreen({ navigation }: any) {
@@ -66,6 +66,16 @@ export default function DashboardScreen({ navigation }: any) {
 
     return () => clearInterval(interval);
   }, [alarms, navigation]);
+
+  useEffect(() => {
+    async function setupNotifications() {
+      const isRegistered = await registerForPushNotificationsAsync();
+      if (!isRegistered) {
+        console.log("User declined notification permissions on auto-prompt.");
+      }
+    }
+    setupNotifications();
+  }, []); // Empty dependency array ensures this only runs once when the screen mounts
 
   const handleDelete = async (alarmId: string) => {
     try {

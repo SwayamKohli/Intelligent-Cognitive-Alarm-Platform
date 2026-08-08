@@ -53,8 +53,9 @@ export async function registerForPushNotificationsAsync() {
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500],
       lightColor: "#FFD700",
-      sound: "alarm-sound.mp3",
-      bypassDnd: true, // Attempt to bypass Do Not Disturb for alarms
+      sound: "alarm_sound.mp3", // Matches the filename
+      bypassDnd: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC, // Add this
     });
   }
 
@@ -94,7 +95,7 @@ export async function scheduleNativeAlarmNotification(
       content: {
         title: "⏰ WAKE UP! Cognitive Alarm",
         body: `Alarm: "${label}". Tap now to solve your cognitive challenge!`,
-        sound: Platform.OS === "ios" ? "alarm-sound.mp3" : "default",
+        sound: Platform.OS === "ios" ? "alarm_sound.mp3" : "default",
         data: { alarmId, label },
         priority: Notifications.AndroidNotificationPriority.MAX,
       },
