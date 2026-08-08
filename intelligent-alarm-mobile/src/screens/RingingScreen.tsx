@@ -8,11 +8,14 @@ import {
   Alert,
   ActivityIndicator,
   Animated,
+  AppState,
 } from "react-native";
 import { Audio } from "expo-av";
+import * as Notifications from "expo-notifications";
 import { AlarmClock, Moon } from "lucide-react-native";
 import api from "../lib/api";
 import { colors, radius, spacing, typography } from "../theme";
+import { scheduleNativeAlarmNotification } from "../lib/notifications";
 
 export default function RingingScreen({ route, navigation }: any) {
   const { alarmId, label } = route.params;
@@ -34,10 +37,26 @@ export default function RingingScreen({ route, navigation }: any) {
   useEffect(() => {
     playAlarmSound();
     fetchChallenge();
+
+    // The "Escape Penalty". If they minimize the app without solving, fire a notification instantly!
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "background" && !submitting) {
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: "🚨 Don't go back to sleep!",
+            body: "You must solve the challenge to turn off the alarm!",
+            priority: Notifications.AndroidNotificationPriority.MAX,
+          },
+          trigger: null, // Fires instantly
+        });
+      }
+    });
+
     return () => {
       stopAlarmSound();
+      subscription.remove();
     };
-  }, []);
+  }, [submitting]);
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -47,6 +66,13 @@ export default function RingingScreen({ route, navigation }: any) {
 
   const playAlarmSound = async () => {
     try {
+      // Tell Android this audio is critical and must survive in the background
+      await Audio.setAudioModeAsync({
+        staysActiveInBackground: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+      });
+
       const { sound } = await Audio.Sound.createAsync(
         require("../../assets/alarm_sound.mp3"),
         { shouldPlay: true, isLooping: true, volume: 1.0 },
@@ -166,6 +192,15 @@ export default function RingingScreen({ route, navigation }: any) {
     try {
       await api.post("/alarms/snooze", { alarm_id: alarmId });
       await stopAlarmSound();
+
+      // Calculate time 5 minutes from now and schedule the OS notification
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 5);
+      const snoozeTimeString = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+      
+      await scheduleNativeAlarmNotification(alarmId, label, snoozeTimeString);
+      
+      Alert.alert("Snoozed", "The alarm will ring again in 5 minutes.");
       navigation.goBack();
     } catch (error: any) {
       if (error.response?.status === 400) {
