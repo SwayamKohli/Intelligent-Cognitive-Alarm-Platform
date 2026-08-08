@@ -48,14 +48,14 @@ export async function registerForPushNotificationsAsync() {
 
   // Configure custom Android Alarm Channel for high-priority sound
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("alarm-channel", {
-      name: "Cognitive Alarms",
+    await Notifications.setNotificationChannelAsync("cognitive-alarm-critical", {
+      name: "Critical Cognitive Alarms",
       importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 500, 200, 500],
+      vibrationPattern: [0, 500, 200, 500, 200, 500],
       lightColor: "#FFD700",
-      sound: "alarm_sound.mp3", // Matches the filename
+      sound: "alarm_sound.mp3",
       bypassDnd: true,
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC, // Add this
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     });
   }
 
@@ -102,6 +102,7 @@ export async function scheduleNativeAlarmNotification(
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         seconds: secondsUntilTrigger,
+        channelId: "cognitive-alarm-critical", 
         repeats: false,
       },
     });

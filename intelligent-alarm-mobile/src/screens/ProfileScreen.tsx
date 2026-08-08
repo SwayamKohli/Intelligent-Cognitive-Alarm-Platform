@@ -10,12 +10,14 @@ import {
   ActivityIndicator,
   Platform,
   Switch,
+  Linking, // Added for deep-linking to OS Settings
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Moon, Sunrise, Download, FileText, Bell } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as SecureStore from "expo-secure-store";
+import * as Notifications from "expo-notifications"; // Added to check true OS status
 import api from "../lib/api";
 import { colors, radius, spacing, typography } from "../theme";
 import { registerForPushNotificationsAsync } from "../lib/notifications";
@@ -53,7 +55,7 @@ export default function ProfileScreen() {
   const [showBedtimePicker, setShowBedtimePicker] = useState(false);
   const [showWakeTimePicker, setShowWakeTimePicker] = useState(false);
 
-  // Added master push toggle
+  // Master push toggle reflecting TRUE device state
   const [pushEnabled, setPushEnabled] = useState(false);
 
   const [notifPrefs, setNotifPrefs] = useState({
@@ -66,7 +68,14 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     fetchProfileAndSettings();
+    checkTrueOSPermissionStatus();
   }, []);
+
+  // Check the actual operating system permission status
+  const checkTrueOSPermissionStatus = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    setPushEnabled(status === "granted");
+  };
 
   const parseTimeStringToDate = (
     timeStr?: string,
@@ -123,11 +132,6 @@ export default function ProfileScreen() {
           challenge_reminders: notifRes.data.challenge_reminders,
           weekly_sleep_report: notifRes.data.weekly_sleep_report,
         });
-
-        // If the backend has an FCM token stored, assume push is enabled
-        if (notifRes.data.fcm_token) {
-          setPushEnabled(true);
-        }
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -138,27 +142,40 @@ export default function ProfileScreen() {
   };
 
   const handlePushToggle = async (value: boolean) => {
-    setPushEnabled(value);
     if (value) {
-      const token = await registerForPushNotificationsAsync();
-      if (token) {
-        try {
-          await api.post("/notifications/fcm-token", {
-            fcm_token: token,
-            device_type: Platform.OS === "ios" ? "ios" : "android",
-          });
-          Alert.alert("Success", "Push notifications enabled for this device.");
-        } catch (error) {
-          console.error("Failed to register push token", error);
-          Alert.alert(
-            "Error",
-            "Failed to register push notifications with the server.",
-          );
-          setPushEnabled(false);
-        }
-      } else {
-        setPushEnabled(false);
+      // User is trying to turn ON notifications
+      const { status } = await Notifications.getPermissionsAsync();
+      
+      if (status === "denied") {
+        // If they previously denied it, we cannot ask again. Must send to OS Settings.
+        Alert.alert(
+          "Permission Denied",
+          "You have blocked notifications for this app. Please enable them in your device settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => Linking.openSettings() }
+          ]
+        );
+        return;
       }
+
+      // Attempt to register
+      const isRegistered = await registerForPushNotificationsAsync();
+      setPushEnabled(isRegistered);
+      
+    } else {
+      // User is trying to turn OFF notifications. 
+      // We cannot programmatically revoke OS permissions, so we guide them to settings.
+       Alert.alert(
+        "Manage Notifications",
+        "To completely disable push notifications and alarms, please turn them off in your device settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() }
+        ]
+      );
+      // Reset toggle to true since we didn't actually turn them off
+      setPushEnabled(true);
     }
   };
 
@@ -323,7 +340,6 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.card}>
-        {/* NEW MASTER PUSH NOTIFICATION TOGGLE */}
         <View style={styles.switchRow}>
           <Text style={[styles.switchLabel, { color: colors.accent }]}>
             Enable Push Notifications
